@@ -1,0 +1,450 @@
+"use client";
+
+import clsx from "clsx";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  Activity,
+  Cpu,
+  Crosshair,
+  Database,
+  Gauge,
+  Pause,
+  Play,
+  RotateCcw,
+  ScanEye,
+  Square,
+  Video,
+} from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  CAMERA_PROFILES,
+  GROUP_COLORS,
+  GROUP_LABEL,
+  MODELS,
+  type DetectionGroup,
+} from "@/lib/sim";
+import { Corners, Panel, StatusDot } from "@/components/ui";
+import { CameraFeed, type FeedStats, type SimEvent } from "./feed-canvas";
+import { BackendCameraFeed } from "./backend-camera-feed";
+
+interface TickerEvent extends SimEvent {
+  key: number;
+}
+
+type SessionCounts = Record<DetectionGroup, number> & { total: number };
+
+const THREATS = [
+  { label: "LOW", density: 0.7, tone: "text-frost", activeCls: "border-frost/60 text-frost" },
+  { label: "MED", density: 1.15, tone: "text-flare", activeCls: "border-flare/60 text-flare" },
+  { label: "HIGH", density: 1.7, tone: "text-alert", activeCls: "border-alert/60 text-alert" },
+];
+
+const GROUP_ORDER: DetectionGroup[] = ["person", "face", "vehicle", "object"];
+
+function timeOf(iso: string) {
+  try {
+    const d = new Date(iso);
+    const p = (n: number) => String(n).padStart(2, "0");
+    return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+  } catch {
+    return "--:--:--";
+  }
+}
+
+export function ConsoleClient({ initialCam = 0 }: { initialCam?: number }) {
+  const [camIdx, setCamIdx] = useState(initialCam);
+  const [paused, setPaused] = useState(false);
+  const [threat, setThreat] = useState(1);
+  const [ticker, setTicker] = useState<TickerEvent[]>([]);
+  const [session, setSession] = useState<SessionCounts>({
+    face: 0,
+    person: 0,
+    vehicle: 0,
+    object: 0,
+    total: 0,
+  });
+  const [stats, setStats] = useState<FeedStats | null>(null);
+  const [persisted, setPersisted] = useState(0);
+  const [camStatus, setCamStatus] = useState<Record<string, string>>({});
+  const [clockNow, setClockNow] = useState(0);
+
+  const seqRef = useRef(0);
+  const queueRef = useRef<SimEvent[]>([]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setClockNow(Date.now()), 1000);
+    const initial = window.setTimeout(() => setClockNow(Date.now()), 0);
+    return () => { window.clearTimeout(initial); window.clearInterval(timer); };
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/cameras")
+      .then((r) => r.json())
+      .then((d) => {
+        const map: Record<string, string> = {};
+        for (const c of d.cameras ?? []) map[c.code] = c.status;
+        setCamStatus(map);
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleEvent = useCallback((e: SimEvent) => {
+    setTicker((prev) =>
+      [{ ...e, key: ++seqRef.current }, ...prev].slice(0, 30),
+    );
+    setSession((s) => {
+      const group = (
+        { face: "face", person: "person", car: "vehicle", truck: "vehicle", bus: "vehicle", motorbike: "vehicle" } as Record<string, DetectionGroup>
+      )[e.className] ?? "object";
+      return { ...s, [group]: s[group] + 1, total: s.total + 1 };
+    });
+    queueRef.current.push(e);
+  }, []);
+
+  const handleStats = useCallback((s: FeedStats) => setStats(s), []);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      const batch = queueRef.current;
+      if (batch.length === 0) return;
+      queueRef.current = [];
+      fetch("/api/events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          events: batch.map((e) => ({
+            event_type: e.type,
+            class_name: e.className,
+            confidence: e.confidence,
+            tracking_id: e.trackingId,
+            camera: e.camera,
+          })),
+        }),
+      })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          if (d?.inserted) setPersisted((p) => p + d.inserted);
+        })
+        .catch(() => {});
+    }, 2500);
+    return () => clearInterval(id);
+  }, []);
+
+  const rate = useMemo(() => {
+    const buckets = new Array(12).fill(0) as number[];
+    const now = clockNow;
+    for (const e of ticker) {
+      const age = now - new Date(e.at).getTime();
+      const b = Math.floor(age / 5000);
+      if (b >= 0 && b < 12) buckets[11 - b]++;
+    }
+    return buckets;
+  }, [ticker, clockNow]);
+  const maxRate = Math.max(1, ...rate);
+
+  const profile = CAMERA_PROFILES[camIdx];
+  const density = THREATS[threat].density;
+
+  const resetSession = () => {
+    setTicker([]);
+    setSession({ face: 0, person: 0, vehicle: 0, object: 0, total: 0 });
+    setPersisted(0);
+  };
+
+  return (
+    <main className="pt-14">
+      <div className="mx-auto max-w-[1500px] px-4 py-5 sm:px-6">
+        {/* header */}
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-3 font-mono text-[11px] tracking-[0.32em] text-mist">
+              <span className="text-signal">02</span>
+              <span className="h-px w-9 bg-edge2" />
+              <span>LIVE CONSOLE</span>
+            </div>
+            <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
+              Surveillance <span className="text-glow text-signal">Grid</span>
+            </h1>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center border border-edge bg-panel font-mono text-[10px] tracking-[0.18em]">
+              {THREATS.map((t, i) => (
+                <button
+                  key={t.label}
+                  onClick={() => setThreat(i)}
+                  className={clsx(
+                    "border-l border-edge px-3 py-2 first:border-l-0 transition-colors",
+                    i === threat ? t.activeCls + " bg-abyss" : "text-mist hover:text-pale",
+                  )}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setPaused((p) => !p)}
+              className="flex items-center gap-2 border border-edge bg-panel px-3 py-2 font-mono text-[10px] tracking-[0.18em] text-pale transition-colors hover:border-signal/50 hover:text-signal"
+            >
+              {paused ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
+              {paused ? "RESUME" : "PAUSE"}
+            </button>
+            <button
+              onClick={resetSession}
+              className="flex items-center gap-2 border border-edge bg-panel px-3 py-2 font-mono text-[10px] tracking-[0.18em] text-mist transition-colors hover:text-pale"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              RESET SESSION
+            </button>
+          </div>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-12">
+          {/* feed column */}
+          <div className="space-y-4 lg:col-span-8">
+            <Panel bracket tone="border-signal/50" className="bg-abyss/90">
+              <div className="flex items-center justify-between border-b border-edge px-4 py-2.5">
+                <div className="flex items-center gap-3">
+                  <Video className="h-4 w-4 text-signal" />
+                  <span className="font-mono text-xs font-bold tracking-[0.22em] text-pale">
+                    {profile.code}
+                  </span>
+                  <span className="font-mono text-[11px] tracking-[0.14em] text-mist">
+                    {profile.name.toUpperCase()} · {profile.zone.toUpperCase()}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 font-mono text-[10px] tracking-[0.18em]">
+                  <span className={clsx("flex items-center gap-1.5", paused ? "text-flare" : "text-alert")}>
+                    <span className={clsx("h-2 w-2 rounded-full", paused ? "bg-flare" : "bg-alert blink")} />
+                    {paused ? "HELD" : "REC"}
+                  </span>
+                  <span className="hidden text-mist sm:inline">1280×720</span>
+                </div>
+              </div>
+
+              {profile.code === "CAM-01" ? (
+                <BackendCameraFeed
+                  key="backend-cam-01"
+                  profile={profile}
+                  paused={paused}
+                  onEvent={handleEvent}
+                  onStats={handleStats}
+                  className="aspect-video w-full"
+                />
+              ) : (
+                <CameraFeed
+                  key={profile.code}
+                  profile={profile}
+                  live
+                  paused={paused}
+                  density={density}
+                  onEvent={handleEvent}
+                  onStats={handleStats}
+                  className="aspect-video w-full"
+                />
+              )}
+
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-edge px-4 py-2.5 font-mono text-[10px] tracking-[0.16em] text-mist">
+                <div className="flex items-center gap-2">
+                  <Crosshair className="h-3.5 w-3.5 text-signal" />
+                  <span>ATTR: FACE · LIVE YOLO MODEL</span>
+                </div>
+                <span className="text-signal">THREAT LEVEL: {THREATS[threat].label}</span>
+              </div>
+            </Panel>
+
+            {/* camera thumbs */}
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {CAMERA_PROFILES.map((p, i) => {
+                const active = i === camIdx;
+                const status = camStatus[p.code] ?? "active";
+                return (
+                  <button
+                    key={p.code}
+                    onClick={() => setCamIdx(i)}
+                    className={clsx(
+                      "group relative border text-left transition-all",
+                      active
+                        ? "border-signal/60 panel-glow"
+                        : "border-edge hover:border-edge2 opacity-80 hover:opacity-100",
+                    )}
+                  >
+                    <CameraFeed
+                      profile={p}
+                      compact
+                      live={false}
+                      className="aspect-video w-full"
+                    />
+                    <div className="flex items-center justify-between border-t border-edge bg-panel/90 px-2 py-1.5">
+                      <span className={clsx("font-mono text-[10px] font-bold tracking-[0.14em]", active ? "text-signal" : "text-pale")}>
+                        {p.code}
+                      </span>
+                      <StatusDot
+                        tone={status === "active" ? "signal" : status === "maintenance" ? "flare" : "alert"}
+                        ping={status === "active"}
+                      />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* right column */}
+          <div className="space-y-4 lg:col-span-4">
+            <Panel className="p-4">
+              <PanelTitle icon={<ScanEye className="h-3.5 w-3.5" />} label="IN FRAME — CURRENT COUNT" />
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                {GROUP_ORDER.map((g) => (
+                  <div key={g} className="border border-edge bg-abyss/70 p-3">
+                    <div className="flex items-center gap-1.5 font-mono text-[9px] tracking-[0.2em] text-mist">
+                      <span className="h-1.5 w-1.5 rounded-[1px]" style={{ backgroundColor: GROUP_COLORS[g] }} />
+                      {GROUP_LABEL[g].toUpperCase()}
+                    </div>
+                    <div className="mt-1 font-mono text-3xl font-bold tabular-nums" style={{ color: GROUP_COLORS[g] }}>
+                      {stats ? String(stats.counts[g]).padStart(2, "0") : "—"}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-3 font-mono text-[9px] leading-relaxed tracking-[0.08em] text-mist">
+                CURRENT = OBJECTS VISIBLE NOW. EVENTS = UNIQUE TRACKED IDs LOGGED.
+              </p>
+            </Panel>
+
+            <Panel className="p-4">
+              <PanelTitle icon={<Gauge className="h-3.5 w-3.5" />} label="PIPELINE TELEMETRY" />
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <div className="border border-edge bg-abyss/70 p-3">
+                  <div className="font-mono text-[9px] tracking-[0.2em] text-mist">FPS</div>
+                  <div className="mt-1 font-mono text-2xl font-bold text-signal tabular-nums">
+                    {stats ? stats.fps.toFixed(1) : "—"}
+                  </div>
+                </div>
+                <div className="border border-edge bg-abyss/70 p-3">
+                  <div className="font-mono text-[9px] tracking-[0.2em] text-mist">INFERENCE</div>
+                  <div className="mt-1 font-mono text-2xl font-bold text-frost tabular-nums">
+                    {stats ? `${stats.inferenceMs.toFixed(0)}ms` : "—"}
+                  </div>
+                </div>
+              </div>
+              <div className="mt-3 space-y-2.5">
+                {MODELS.map((m) => (
+                  <div key={m.key} className="flex items-center justify-between gap-2">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <StatusDot tone={m.status === "online" ? "signal" : "alert"} ping={false} />
+                      <span className="truncate font-mono text-[10px] tracking-[0.08em] text-pale">{m.file}</span>
+                    </div>
+                    <span className="font-mono text-[10px] text-mist">{m.latency}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-3 flex items-center justify-between border-t border-edge pt-3 font-mono text-[10px] tracking-[0.14em] text-mist">
+                <span className="flex items-center gap-1.5">
+                  <Cpu className="h-3 w-3" /> DEVICE
+                </span>
+                <span className="text-pale">CPU · 1 THREAD</span>
+              </div>
+            </Panel>
+
+            <Panel className="p-4">
+              <PanelTitle icon={<Database className="h-3.5 w-3.5" />} label="SESSION EVENTS" />
+              <div className="mt-3 space-y-2">
+                {GROUP_ORDER.map((g) => (
+                  <div key={g} className="flex items-center justify-between font-mono text-[11px]">
+                    <span className="flex items-center gap-2 text-mist">
+                      <span className="h-1.5 w-1.5 rounded-[1px]" style={{ backgroundColor: GROUP_COLORS[g] }} />
+                      {GROUP_LABEL[g].toUpperCase()}
+                    </span>
+                    <span className="font-bold tabular-nums" style={{ color: GROUP_COLORS[g] }}>
+                      {session[g]}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-3 flex items-center justify-between border-t border-edge pt-3">
+                <span className="font-mono text-[10px] tracking-[0.18em] text-mist">TOTAL UNIQUE</span>
+                <span className="font-mono text-xl font-bold text-pale tabular-nums">{session.total}</span>
+              </div>
+              <div className="mt-2 flex items-center justify-between font-mono text-[9px] tracking-[0.14em] text-mist">
+                <span className="flex items-center gap-1.5">
+                  <Database className="h-3 w-3 text-signal" /> POSTGRES SYNC
+                </span>
+                <span className="text-signal">{persisted} ROWS ↗</span>
+              </div>
+            </Panel>
+          </div>
+        </div>
+
+        {/* event stream */}
+        <Panel className="mt-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-edge px-4 py-2.5">
+            <div className="flex items-center gap-2 font-mono text-[10px] tracking-[0.22em] text-mist">
+              <Activity className="h-3.5 w-3.5 text-signal" />
+              LIVE EVENT STREAM
+            </div>
+            <div className="flex h-6 items-end gap-1">
+              {rate.map((v, i) => (
+                <span
+                  key={i}
+                  className="w-2.5 bg-signal/60 transition-all duration-500"
+                  style={{ height: `${Math.max(8, (v / maxRate) * 100)}%` }}
+                />
+              ))}
+            </div>
+          </div>
+          <div className="grid max-h-72 grid-cols-1 gap-px overflow-y-auto bg-edge/40 md:grid-cols-2">
+            <AnimatePresence initial={false}>
+              {ticker.length === 0 && (
+                <div className="col-span-full bg-panel px-4 py-6 text-center font-mono text-[11px] tracking-[0.2em] text-mist">
+                  AWAITING DETECTIONS…
+                </div>
+              )}
+              {ticker.map((e) => (
+                <motion.div
+                  key={e.key}
+                  layout
+                  initial={{ opacity: 0, x: -14 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="flex items-center gap-3 bg-panel px-4 py-2"
+                >
+                  <span className="font-mono text-[10px] tabular-nums text-mist">{timeOf(e.at)}</span>
+                  <span
+                    className="inline-block h-1.5 w-1.5 shrink-0 rounded-[1px]"
+                    style={{
+                      backgroundColor:
+                        GROUP_COLORS[
+                          ({ face: "face", person: "person", car: "vehicle", truck: "vehicle", bus: "vehicle", motorbike: "vehicle" } as Record<string, DetectionGroup>)[e.className] ?? "object"
+                        ],
+                    }}
+                  />
+                  <span className="font-mono text-[10px] font-bold tracking-[0.14em] text-pale">
+                    {e.type}
+                  </span>
+                  <span className="font-mono text-[10px] text-mist">
+                    {e.className} · {e.confidence.toFixed(2)}
+                  </span>
+                  <span className="ml-auto font-mono text-[10px] text-mist">
+                    TRK#{String(e.trackingId).padStart(3, "0")} · {e.camera}
+                  </span>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        </Panel>
+      </div>
+    </main>
+  );
+}
+
+function PanelTitle({ icon, label }: { icon: React.ReactNode; label: string }) {
+  return (
+    <div className="flex items-center gap-2 font-mono text-[10px] tracking-[0.22em] text-mist">
+      <span className="text-signal">{icon}</span>
+      {label}
+      <span className="ml-auto h-px flex-1 bg-edge" />
+      <Square className="h-1.5 w-1.5 text-edge2" />
+    </div>
+  );
+}

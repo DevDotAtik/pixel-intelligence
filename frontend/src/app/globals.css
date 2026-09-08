@@ -1,0 +1,207 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #04080a;
+  --color-abyss: #060c0f;
+  --color-panel: #0a1114;
+  --color-panel2: #0d1619;
+  --color-edge: #1b2a28;
+  --color-edge2: #2c403b;
+  --color-signal: #3ef2a6;
+  --color-signaldeep: #127a52;
+  --color-flare: #ffb224;
+  --color-frost: #4cc9f0;
+  --color-ghost: #a78bfa;
+  --color-alert: #ff4d5e;
+  --color-pale: #d9ece3;
+  --color-mist: #7d968d;
+
+  --font-display: var(--font-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jbmono), ui-monospace, "SFMono-Regular", monospace;
+}
+
+body {
+  background: var(--color-ink);
+  color: var(--color-pale);
+  font-family: var(--font-display);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+}
+
+::selection {
+  background: rgba(62, 242, 166, 0.28);
+  color: #eafff5;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #04080a;
+}
+::-webkit-scrollbar-thumb {
+  background: #20322f;
+  border: 3px solid #04080a;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #2f4a44;
+}
+
+/* ------- texture + HUD utilities ------- */
+
+.grid-bg {
+  background-image:
+    linear-gradient(rgba(62, 242, 166, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(62, 242, 166, 0.045) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+
+.grid-bg-fine {
+  background-image:
+    linear-gradient(rgba(62, 242, 166, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(62, 242, 166, 0.03) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+.scanlines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+.scanlines::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(220, 255, 240, 0.028) 0 1px,
+    transparent 1px 3px
+  );
+}
+
+.vignette::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    120% 90% at 50% 42%,
+    transparent 55%,
+    rgba(2, 5, 6, 0.75) 100%
+  );
+  z-index: 4;
+}
+
+.noise-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  z-index: 6;
+}
+
+.text-glow {
+  text-shadow:
+    0 0 18px rgba(62, 242, 166, 0.5),
+    0 0 64px rgba(62, 242, 166, 0.22);
+}
+
+.panel-glow {
+  box-shadow:
+    0 0 0 1px rgba(62, 242, 166, 0.22),
+    0 0 28px rgba(62, 242, 166, 0.12),
+    0 24px 80px -24px rgba(0, 0, 0, 0.8);
+}
+
+/* ------- motion ------- */
+
+@keyframes blink-hard {
+  0%, 60% { opacity: 1; }
+  61%, 100% { opacity: 0.15; }
+}
+.blink {
+  animation: blink-hard 1.2s steps(1, end) infinite;
+}
+
+@keyframes marquee-x {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.marquee-track {
+  animation: marquee-x 32s linear infinite;
+  will-change: transform;
+}
+
+@keyframes sweep-y {
+  0% { top: -12%; opacity: 0; }
+  8% { opacity: 1; }
+  92% { opacity: 1; }
+  100% { top: 104%; opacity: 0; }
+}
+.sweep-line {
+  animation: sweep-y 7s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+@keyframes dash-flow {
+  to { stroke-dashoffset: -26; }
+}
+.flow-dash {
+  stroke-dasharray: 8 10;
+  animation: dash-flow 0.9s linear infinite;
+}
+
+@keyframes flow-x {
+  from { background-position: 0 0; }
+  to { background-position: 26px 0; }
+}
+.flow-line {
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(62, 242, 166, 0.7) 0 8px,
+    transparent 8px 18px
+  );
+  background-size: 26px 100%;
+  animation: flow-x 0.75s linear infinite;
+}
+
+@keyframes flicker {
+  0%, 100% { opacity: 1; }
+  41% { opacity: 1; }
+  42% { opacity: 0.6; }
+  43% { opacity: 1; }
+  77% { opacity: 1; }
+  78% { opacity: 0.72; }
+  79% { opacity: 1; }
+}
+.flicker {
+  animation: flicker 6s linear infinite;
+}
+
+@keyframes rise-pulse {
+  0%, 100% { transform: scaleY(0.55); opacity: 0.5; }
+  50% { transform: scaleY(1); opacity: 1; }
+}
+.eq-bar {
+  transform-origin: bottom;
+  animation: rise-pulse 1.6s ease-in-out infinite;
+}
+
+/* ------- recharts theme ------- */
+
+.recharts-cartesian-axis-tick text {
+  fill: var(--color-mist);
+  font-family: var(--font-jbmono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+}
+.recharts-cartesian-grid line {
+  stroke: rgba(62, 242, 166, 0.07);
+}
+.recharts-tooltip-cursor {
+  fill: rgba(62, 242, 166, 0.06);
+}

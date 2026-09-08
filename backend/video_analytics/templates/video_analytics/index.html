@@ -1,0 +1,39 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Learning prototype dashboard for AI video analytics.">
+    <title>Sentinel Lens · AI Video Analytics</title>
+    <link rel="stylesheet" href="{% static 'video_analytics/style.css' %}">
+</head>
+<body>
+    <header class="header">
+        <div class="header-brand"><div class="logo" aria-hidden="true">SL</div><div><p class="eyebrow">Learning prototype · authorized feeds only</p><h1>Sentinel Lens</h1></div></div>
+        <div class="header-stats" aria-label="System status"><div class="stat"><span class="stat-label">Local time</span><time class="stat-value" id="clock">--:--:--</time></div><div class="stat"><span class="stat-label">Stream FPS</span><span class="stat-value" id="fps">--</span></div><div class="stat status-stat"><span class="stat-label">Backend</span><span class="stat-value status-pending" id="status" aria-live="polite">CHECKING</span></div></div>
+    </header>
+    <main class="dashboard">
+        <section class="workspace" aria-label="Live analytics workspace">
+            <section class="feed-panel panel"><div class="panel-heading"><div><p class="section-kicker">Camera source</p><h2>Live camera feed</h2></div><span class="live-chip"><i></i> LIVE</span></div>
+                <div class="feed-wrapper"><img id="stream" src="{% url 'video_analytics:stream' %}" alt="Live camera stream with detection overlays"><div id="feed-error" class="feed-error" hidden><div class="feed-error-icon" aria-hidden="true">◌</div><p>Camera feed unavailable</p><small>Check the webcam and start the FastAPI service on port 8000.</small><button id="retry-feed" type="button">Retry stream</button></div><div class="feed-caption"><span id="last-updated">Awaiting first frame</span><span>Detection only · no identity recognition</span></div></div>
+            </section>
+            <section class="metrics" aria-label="Live metrics"><article class="metric-card"><span class="metric-label">Current detections</span><strong id="detection-count">0</strong><small>Visible in latest frame</small></article><article class="metric-card"><span class="metric-label">Unique track events</span><strong id="unique-events">0</strong><small>Since service started</small></article><article class="metric-card"><span class="metric-label">Total observations</span><strong id="total-detections">0</strong><small>Latest frame</small></article><article class="metric-card"><span class="metric-label">Latest confidence</span><strong id="confidence">—</strong><small>Highest active track</small></article></section>
+        </section>
+        <aside class="sidebar panel" aria-label="Recent anonymous tracks"><div class="panel-heading"><div><p class="section-kicker">Activity</p><h2>Recent anonymous tracks</h2></div><span class="badge" id="track-count">0</span></div><p class="sidebar-note">Tracking labels keep detections consistent between frames; they do not identify people.</p><div class="sidebar-list" id="track-list" aria-live="polite"><div class="empty-state"><div class="empty-icon" aria-hidden="true">⌁</div><p>Waiting for detections…</p></div></div><footer class="sidebar-footer"><span>Display refreshes every 2 seconds</span><span id="refresh-state">Waiting</span></footer></aside>
+    </main>
+    <script>
+    (function () {
+        var stream = document.getElementById('stream'), feedError = document.getElementById('feed-error'), clock = document.getElementById('clock'), fps = document.getElementById('fps'), status = document.getElementById('status'), list = document.getElementById('track-list'), frames = 0, fpsStart = performance.now();
+        function setText(id, value) { document.getElementById(id).textContent = value; }
+        function clockTick() { clock.textContent = new Date().toLocaleTimeString([], { hour12: false }); requestAnimationFrame(clockTick); }
+        function fpsTick() { frames++; var now = performance.now(); if (now - fpsStart >= 1000) { fps.textContent = frames; frames = 0; fpsStart = now; } requestAnimationFrame(fpsTick); }
+        function setStatus(online) { status.textContent = online ? 'ONLINE' : 'OFFLINE'; status.className = 'stat-value ' + (online ? 'status-ok' : 'status-offline'); }
+        function trackCard(track) { var card = document.createElement('article'); card.className = 'track-card'; var head = document.createElement('div'); head.className = 'track-head'; var title = document.createElement('strong'); title.textContent = track.id; var type = document.createElement('span'); type.className = 'track-type'; type.textContent = track.class || 'object'; head.append(title, type); card.appendChild(head); var details = [['Confidence', Math.round((track.confidence || 0) * 100) + '%'], ['Observations', track.total_detections], ['First seen', track.first_seen], ['Last seen', track.last_seen]]; var grid = document.createElement('dl'); grid.className = 'track-details'; details.forEach(function (entry) { var group = document.createElement('div'), dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = entry[0]; dd.textContent = entry[1]; group.append(dt, dd); grid.appendChild(group); }); card.appendChild(grid); return card; }
+        function render(data) { var tracks = data.sidebar.tracks || [], analytics = data.analytics || {}; list.replaceChildren(); if (!tracks.length) { list.innerHTML = '<div class="empty-state"><div class="empty-icon" aria-hidden="true">⌁</div><p>Waiting for detections…</p></div>'; } else { tracks.forEach(function (track) { list.appendChild(trackCard(track)); }); } setText('track-count', data.sidebar.total_tracks || 0); setText('detection-count', data.detection_count || 0); setText('unique-events', analytics.unique_events || 0); setText('total-detections', analytics.total_detections || 0); setText('confidence', tracks.length ? Math.round(Math.max.apply(null, tracks.map(function (t) { return t.confidence || 0; })) * 100) + '%' : '—'); setText('last-updated', data.updated_at ? 'Last analytics update: ' + data.updated_at : 'Awaiting first frame'); setText('refresh-state', 'Updated now'); setStatus(true); }
+        function poll() { fetch('/video/sidebar-data/', { cache: 'no-store' }).then(function (r) { if (!r.ok) throw new Error(); return r.json(); }).then(render).catch(function () { setStatus(false); setText('refresh-state', 'Connection unavailable'); }); }
+        stream.addEventListener('error', function () { stream.hidden = true; feedError.hidden = false; }); document.getElementById('retry-feed').addEventListener('click', function () { feedError.hidden = true; stream.hidden = false; stream.src = '{% url "video_analytics:stream" %}?t=' + Date.now(); }); clockTick(); fpsTick(); poll(); window.setInterval(poll, 2000);
+    }());
+    </script>
+</body>
+</html>
