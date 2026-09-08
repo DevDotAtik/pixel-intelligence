@@ -1839,5 +1839,789 @@
     "class_name": "FACE",
     "confidence": 0.9234803915023804,
     "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:30:03.875124Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9031916856765747,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:30:06.099861Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.8990980982780457,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:30:06.534911Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.8950648903846741,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:30:07.654085Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.890988826751709,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:30:08.675168Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9085378646850586,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:30:09.782266Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9215100407600403,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:30:12.055794Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.93997722864151,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:30:15.272949Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9193761944770813,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:30:16.923711Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9046093225479126,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:30:18.505256Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9008591175079346,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:30:19.207455Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9285901784896851,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:30:19.901648Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.8983325958251953,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:30:21.476346Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.8946753740310669,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:30:22.169487Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9152591228485107,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:30:23.027277Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.8879342675209045,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:30:24.464065Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9161824584007263,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:30:26.012657Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9113683700561523,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:30:27.466500Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9304794073104858,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:30:28.237942Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.937465488910675,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:30:29.036821Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9338251948356628,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:30:29.706001Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9218076467514038,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:30:30.781275Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9312217831611633,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:30:32.210222Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9393519163131714,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:30:32.529251Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9276793003082275,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:30:32.776270Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9288914799690247,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:30:34.846204Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9215087294578552,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:30:35.894488Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.8701192140579224,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:30:37.919952Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.8554468750953674,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:30:39.729845Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.559984564781189,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:30:42.180086Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.5244359374046326,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:30:42.837105Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9000203609466553,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:30:44.776630Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.8954420685768127,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:30:45.150576Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.825640082359314,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:30:45.621114Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.909191906452179,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:30:46.558724Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.8823385834693909,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:30:47.448268Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.8911702632904053,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:30:47.785210Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.6462424397468567,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:30:59.823771Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9402849078178406,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:00.377575Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9460050463676453,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:02.209348Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9215880036354065,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:05.264116Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.925845742225647,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:06.745479Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9291529059410095,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:07.132039Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9151113629341125,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:08.329971Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9161627888679504,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:09.731054Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9243013858795166,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:11.218314Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9537966251373291,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:12.913113Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9301259517669678,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:13.933443Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9124818444252014,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:15.669793Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9478885531425476,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:18.091714Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.7322050929069519,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:19.795191Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.8668293952941895,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:20.595694Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.827594518661499,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:22.010260Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.8341070413589478,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:23.664454Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.8550804853439331,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:24.688128Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.8190032243728638,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:25.723938Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.8036044836044312,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:26.366371Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.8130509853363037,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:27.631146Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.7977682948112488,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:28.755307Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.813195526599884,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:29.065412Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.8103964328765869,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:30.011258Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.8044854402542114,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:30.355211Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.804827094078064,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:31.817706Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.7934907674789429,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:33.547966Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.8238233923912048,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:34.113813Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9019723534584045,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:34.882689Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9127215147018433,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:35.212477Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9212348461151123,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:36.547027Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.8802095055580139,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:37.307277Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.8450284004211426,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:37.743578Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.8508456349372864,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:38.926560Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.891272246837616,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:39.679765Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.8635399341583252,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:40.686368Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.8913324475288391,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:41.701121Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.8766962289810181,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:42.342308Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.8382588624954224,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:43.785925Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.8392055630683899,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:44.827807Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.8659633994102478,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:45.190906Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.8504878282546997,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:45.813258Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.8197988271713257,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:46.543050Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.8185906410217285,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:47.157670Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9452568292617798,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:47.963421Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.8867321610450745,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:50.545237Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.888225257396698,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:52.107300Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.8860278725624084,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:53.731147Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.8853240013122559,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:54.726678Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.8859648704528809,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:56.011051Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.8988504409790039,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:57.395716Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9231451749801636,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:31:58.913828Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9225165247917175,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:32:00.159697Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9384769201278687,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:32:02.659824Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9195888638496399,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:32:04.060339Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.918669581413269,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:32:05.671971Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9214462637901306,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:32:07.447154Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9152804017066956,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:32:08.484477Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.8986561298370361,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:32:10.443516Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9357140064239502,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:32:12.025331Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9456490874290466,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:32:14.434848Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9272556304931641,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:32:14.840440Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9130865335464478,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:32:15.637973Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9240282773971558,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:32:17.995446Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9187620282173157,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:32:19.197608Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9208055734634399,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:32:21.364436Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.923334538936615,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:32:22.821153Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9235685467720032,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:32:24.686426Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9056623578071594,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:32:25.816006Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.907688558101654,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:32:27.037492Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.905007541179657,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:32:28.558723Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.8956102728843689,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:32:29.194221Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9038228988647461,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:32:30.300729Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9163333773612976,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:32:32.637990Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9066467881202698,
+    "tracking_id": null
+  },
+  {
+    "timestamp": "2026-09-08T04:32:35.097293Z",
+    "event_type": "FACE_DETECTED",
+    "class_name": "FACE",
+    "confidence": 0.9074495434761047,
+    "tracking_id": null
   }
 ]
