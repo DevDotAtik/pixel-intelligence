@@ -11,6 +11,8 @@ interface Endpoint {
   desc: string;
   params?: Array<[string, string]>;
   body?: unknown;
+  runnable?: boolean;
+  href?: string;
 }
 
 const GROUPS: Array<{ name: string; endpoints: Endpoint[] }> = [
@@ -20,12 +22,17 @@ const GROUPS: Array<{ name: string; endpoints: Endpoint[] }> = [
       {
         method: "GET",
         path: "/api/health",
-        desc: "Liveness probe with Postgres round-trip latency.",
+        desc: "Liveness probe with MongoDB heartbeat.",
       },
       {
         method: "GET",
         path: "/api/models",
-        desc: "YOLO model registry, weights paths and runtime configuration.",
+        desc: "Model registry (face / person / plate), installed weights and runtime configuration.",
+      },
+      {
+        method: "GET",
+        path: "/api/config",
+        desc: "Live runtime tuning — inference size, thresholds, camera defaults.",
       },
     ],
   },
@@ -35,9 +42,39 @@ const GROUPS: Array<{ name: string; endpoints: Endpoint[] }> = [
       {
         method: "POST",
         path: "/api/detect",
-        desc: "Single-frame detection pass. Optional body { scenario }. BBox format [x, y, w, h] on a 1280×720 frame.",
-        params: [["scenario", "\"random\" | \"crowd\" | \"empty\" | \"convoy\""]],
-        body: { scenario: "crowd" },
+        desc: "Single-frame detection pass, multipart/form-data. Returns bboxes in [x, y, w, h] with identity, clothing and timeline action.",
+        params: [
+          ["image_data", "image file (faces, scene, plate…)"],
+          ["model", "face | person | plate"],
+          ["camera_code", "CAM-01 … CAM-04"],
+        ],
+        runnable: false,
+      },
+    ],
+  },
+  {
+    name: "IDENTITY",
+    endpoints: [
+      {
+        method: "POST",
+        path: "/api/registrations",
+        desc: "Enrol a person — multipart/form-data with a clear face photo. Stored as a 64-dim embedding in Mongo.",
+        params: [
+          ["image_data", "face photo file"],
+          ["name", "display name"],
+          ["notes", "optional notes"],
+        ],
+        runnable: false,
+      },
+      {
+        method: "GET",
+        path: "/api/registrations",
+        desc: "Registered people and their enrolment date.",
+      },
+      {
+        method: "GET",
+        path: "/api/subjects",
+        desc: "Identity aggregate per tracked subject — registered flag, sighting count, last seen, camera.",
       },
     ],
   },
@@ -46,40 +83,22 @@ const GROUPS: Array<{ name: string; endpoints: Endpoint[] }> = [
     endpoints: [
       {
         method: "GET",
-        path: "/api/events?limit=5",
-        desc: "Paginated event ledger. Filters: camera, class, type, min_conf, track, limit, offset.",
+        path: "/api/events?limit=25",
+        desc: "Deduplicated subject sightings — one entry per reappearance.",
         params: [
           ["camera", "CAM-01 … CAM-04 | all"],
-          ["class", "person | face | vehicle | object | class name"],
-          ["type", "FACE_DETECTED | PERSON_DETECTED | …"],
-          ["limit / offset", "pagination (max 200)"],
+          ["limit / offset", "pagination (limit max 200)"],
         ],
-      },
-      {
-        method: "POST",
-        path: "/api/events",
-        desc: "Append detection events (what the live console calls every ~2.5s).",
-        body: {
-          events: [
-            {
-              event_type: "PERSON_DETECTED",
-              class_name: "person",
-              confidence: 0.93,
-              tracking_id: 42,
-              camera: "CAM-01",
-            },
-          ],
-        },
       },
       {
         method: "GET",
         path: "/api/event-counts",
-        desc: "All-time event totals grouped by type, plus last-24h volume.",
+        desc: "All-time sighting counts by class.",
       },
       {
         method: "GET",
         path: "/api/stats",
-        desc: "Analytics bundle: 14-day trend, diurnal rhythm, class mix, camera leaders, confidence histogram.",
+        desc: "Analytics bundle: per-class totals, daily/hourly rhythms, confidence histogram, per-camera counts.",
       },
     ],
   },
@@ -89,14 +108,14 @@ const GROUPS: Array<{ name: string; endpoints: Endpoint[] }> = [
       {
         method: "GET",
         path: "/api/cameras",
-        desc: "Camera registry with 24h event volumes and online counts.",
+        desc: "Camera registry (seeded CAM-01…CAM-04) with 24h sighting volumes.",
       },
       {
         method: "PATCH",
         path: "/api/cameras",
-        desc: "Update camera status.",
-        params: [["status", "active | maintenance | offline"]],
-        body: { id: 3, status: "active" },
+        desc: "Flip a camera between active / maintenance / offline.",
+        runnable: false,
+        body: { code: "CAM-02", status: "active" },
       },
     ],
   },
@@ -124,12 +143,7 @@ export default function ApiDocsPage() {
     // This handler runs only after a user click; the timestamp measures the API request.
     // eslint-disable-next-line react-hooks/purity
     const t0 = performance.now();
-    const cleanPath = ep.path;
-    fetch(cleanPath, {
-      method: ep.method,
-      headers: ep.body ? { "Content-Type": "application/json" } : undefined,
-      body: ep.body ? JSON.stringify(ep.body) : undefined,
-    })
+    fetch(ep.path, { method: ep.method, cache: "no-store" })
       .then(async (r) => {
         const ms = Math.round(performance.now() - t0);
         const text = JSON.stringify(await r.json(), null, 2);
@@ -155,17 +169,17 @@ export default function ApiDocsPage() {
           Contracts, <span className="text-signal text-glow">executable</span>
         </h1>
         <p className="mt-4 max-w-2xl leading-relaxed text-pale/70">
-          These endpoints mirror the reference FastAPI service one-to-one. Every
-          response below is generated live against the running backend and its
-          Postgres ledger — press
+          These endpoints mirror the FastAPI service one-to-one — the Next.js
+          route handlers proxy straight to it. Every response below is generated
+          live against the running backend and its MongoDB ledger — press
           <span className="mx-1 font-mono text-[11px] text-signal">RUN</span>
-          to execute a real request.
+          to execute a real GET request.
         </p>
 
         <div className="mt-6 flex items-center gap-3 border border-edge bg-panel px-4 py-3 font-mono text-[10px] tracking-[0.16em] text-mist">
           <Terminal className="h-3.5 w-3.5 text-signal" />
           <span>BASE URL</span>
-          <span className="text-pale">https://your-deployment</span>
+          <span className="text-pale">http://127.0.0.1:8000</span>
           <StatusDot tone="signal" className="ml-auto" />
           <span className="text-signal">OPERATIONAL</span>
         </div>
@@ -196,14 +210,20 @@ export default function ApiDocsPage() {
                       <code className="font-mono text-[12px] font-bold text-pale">
                         {ep.path}
                       </code>
-                      <button
-                        onClick={() => run(ep)}
-                        disabled={running === key}
-                        className="ml-auto flex items-center gap-2 border border-signal/50 bg-signal/10 px-3 py-1.5 font-mono text-[10px] font-bold tracking-[0.18em] text-signal transition-colors hover:bg-signal hover:text-ink disabled:opacity-40"
-                      >
-                        <Play className={clsx("h-3 w-3", running === key && "animate-pulse")} />
-                        {running === key ? "RUNNING" : "RUN"}
-                      </button>
+                      {ep.runnable !== false ? (
+                        <button
+                          onClick={() => run(ep)}
+                          disabled={running === key}
+                          className="ml-auto flex items-center gap-2 border border-signal/50 bg-signal/10 px-3 py-1.5 font-mono text-[10px] font-bold tracking-[0.18em] text-signal transition-colors hover:bg-signal hover:text-ink disabled:opacity-40"
+                        >
+                          <Play className={clsx("h-3 w-3", running === key && "animate-pulse")} />
+                          {running === key ? "RUNNING" : "RUN"}
+                        </button>
+                      ) : (
+                        <span className="ml-auto font-mono text-[9px] tracking-[0.2em] text-mist">
+                          MULTIPART / BODY — RUN FROM APP OR CURL
+                        </span>
+                      )}
                     </div>
                     <div className="px-4 py-3">
                       <p className="text-sm leading-relaxed text-pale/70">{ep.desc}</p>

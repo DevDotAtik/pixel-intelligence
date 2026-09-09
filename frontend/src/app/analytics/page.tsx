@@ -25,10 +25,11 @@ import { ClassDot, CountUp, Panel, SectionTag } from "@/components/ui";
 import { GROUP_COLORS, groupOf } from "@/lib/sim";
 
 const EVENT_COLOR: Record<string, string> = {
-  PERSON_DETECTED: GROUP_COLORS.person,
-  FACE_DETECTED: GROUP_COLORS.face,
-  VEHICLE_DETECTED: GROUP_COLORS.vehicle,
-  OBJECT_DETECTED: GROUP_COLORS.object,
+  face: GROUP_COLORS.face,
+  person: GROUP_COLORS.person,
+  plate: GROUP_COLORS.plate,
+  vehicle: GROUP_COLORS.vehicle,
+  object: GROUP_COLORS.object,
 };
 const EVENT_KEYS = Object.keys(EVENT_COLOR);
 
@@ -39,7 +40,21 @@ interface Stats {
   classes: Array<{ k: string; n: number; avg_conf: number }>;
   cameras: Array<{ code: string; name: string; status: string; n: number }>;
   confidence_hist: Array<{ b: number; n: number }>;
-  recent: Array<Record<string, unknown>>;
+}
+
+interface Subject {
+  identity: string;
+  registered: boolean;
+  sighting_count: number;
+  updated_at: string;
+  attributes: Record<string, unknown>;
+  recent_sightings?: Array<{
+    first_seen: string;
+    last_seen: string;
+    camera_code: string;
+    status: string;
+    attributes?: Record<string, unknown>;
+  }>;
 }
 
 function ChartTip({
@@ -79,13 +94,29 @@ function ChartHead({ title, sub }: { title: string; sub: string }) {
 
 export default function AnalyticsPage() {
   const [stats, setStats] = useState<Stats | null>(null);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [err, setErr] = useState(false);
 
   useEffect(() => {
-    fetch("/api/stats")
-      .then((r) => r.json())
-      .then(setStats)
-      .catch(() => setErr(true));
+    let cancelled = false;
+    const load = () => {
+      fetch("/api/stats", { cache: "no-store" })
+        .then((response) => {
+          if (!response.ok) throw new Error("analytics backend unavailable");
+          return response.json() as Promise<Stats>;
+        })
+        .then((data) => {
+          if (!cancelled) { setStats(data); setErr(false); }
+        })
+        .catch(() => { if (!cancelled) setErr(true); });
+      fetch("/api/subjects", { cache: "no-store" })
+        .then((r) => r.json())
+        .then((d) => { if (!cancelled) setSubjects(d.subjects ?? []); })
+        .catch(() => {});
+    };
+    load();
+    const timer = window.setInterval(load, 5000);
+    return () => { cancelled = true; window.clearInterval(timer); };
   }, []);
 
   const daily = (stats?.daily ?? []).map((d) => {
@@ -119,7 +150,7 @@ export default function AnalyticsPage() {
             Signals from the <span className="text-signal text-glow">ledger</span>
           </h1>
           <span className="font-mono text-[10px] tracking-[0.2em] text-mist">
-            WINDOW · LAST 7 DAYS · LIVE POSTGRES AGGREGATES
+            WINDOW · LAST 7 DAYS · MONGO SUBJECT TIMELINE
           </span>
         </div>
 
@@ -171,7 +202,7 @@ export default function AnalyticsPage() {
 
         {err && (
           <div className="mt-6 border border-alert/50 bg-alert/10 px-4 py-3 font-mono text-[11px] tracking-[0.14em] text-alert">
-            ANALYTICS OFFLINE — DATABASE UNREACHABLE
+            ANALYTICS OFFLINE — FASTAPI EVENT LOG UNREACHABLE
           </div>
         )}
 
@@ -309,28 +340,58 @@ export default function AnalyticsPage() {
             </div>
           </Panel>
 
-          {/* recent */}
+          {/* subject timeline */}
           <Panel>
-            <ChartHead title="LATEST WRITES" sub="APPEND-ONLY LEDGER TAIL" />
-            <div className="divide-y divide-edge/60">
-              {(stats?.recent ?? []).map((r) => (
-                <div key={String(r.id)} className="flex items-center gap-3 px-4 py-2.5">
-                  <ClassDot cls={String(r.class_name)} />
-                  <span className="font-mono text-[10px] font-bold tracking-[0.08em] text-pale">
-                    {String(r.event_type)}
-                  </span>
-                  <span className="font-mono text-[10px] text-mist">
-                    {Number(r.confidence).toFixed(2)} · TRK#{String(r.tracking_id).padStart(3, "0")}
-                  </span>
-                  <span className="ml-auto font-mono text-[10px] text-mist">
-                    {String(r.camera_code)}
-                  </span>
+            <ChartHead title="SUBJECT TIMELINE" sub="ONE ENTRY PER REAPPEARANCE" />
+            <div className="max-h-72 divide-y divide-edge/60 overflow-y-auto">
+              {subjects.length === 0 && (
+                <div className="px-4 py-8 text-center font-mono text-[10px] tracking-[0.18em] text-mist">
+                  NO SUBJECTS SEEN YET — START THE LIVE CAMERA
                 </div>
-              ))}
+              )}
+              {subjects.map((s) => {
+                const latest = s.recent_sightings?.[0];
+                const clothing = (s.attributes?.clothing ?? {}) as Record<string, unknown>;
+                return (
+                  <div key={s.identity} className="flex items-center gap-3 px-4 py-2.5">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-panel font-mono text-[11px] font-bold text-signal">
+                      {String(s.identity).slice(0, 2).toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 font-mono text-[10px] font-bold tracking-[0.08em] text-pale">
+                        {s.identity}
+                        {s.registered && (
+                          <span className="inline-block border border-signal/40 bg-signal/10 px-1.5 py-px text-[8px] tracking-[0.12em] text-signal">
+                            REGISTERED
+                          </span>
+                        )}
+                      </div>
+                      <div className="truncate font-mono text-[9px] text-mist">
+                        {s.sighting_count} sightings
+                        {clothing.type ? ` · ${String(clothing.type)} ${String(clothing.colour ?? "")}` : ""}
+                        {latest ? ` · last ${fmtTime(latest.last_seen)} @ ${latest.camera_code}` : ""}
+                      </div>
+                    </div>
+                    <span className={`ml-auto font-mono text-[9px] ${latest?.status === "closed" ? "text-mist" : "text-signal"}`}>
+                      {latest?.status ?? "—"}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </Panel>
         </div>
       </div>
     </main>
   );
+}
+
+function fmtTime(iso: string) {
+  try {
+    const d = new Date(iso);
+    const p = (n: number) => String(n).padStart(2, "0");
+    return `${p(d.getHours())}:${p(d.getMinutes())}`;
+  } catch {
+    return "--:--";
+  }
 }

@@ -1,7 +1,7 @@
 // Shared simulation + classification constants.
 // Client-safe: no Node imports allowed in this module.
 
-export type DetectionGroup = "face" | "person" | "vehicle" | "object";
+export type DetectionGroup = "face" | "person" | "vehicle" | "object" | "plate";
 
 export const CLASS_GROUP: Record<string, DetectionGroup> = {
   face: "face",
@@ -12,6 +12,7 @@ export const CLASS_GROUP: Record<string, DetectionGroup> = {
   motorbike: "vehicle",
   backpack: "object",
   suitcase: "object",
+  plate: "plate",
 };
 
 export const GROUP_LABEL: Record<DetectionGroup, string> = {
@@ -19,6 +20,7 @@ export const GROUP_LABEL: Record<DetectionGroup, string> = {
   person: "Persons",
   vehicle: "Vehicles",
   object: "Objects",
+  plate: "Plates",
 };
 
 export const GROUP_COLORS: Record<DetectionGroup, string> = {
@@ -26,6 +28,7 @@ export const GROUP_COLORS: Record<DetectionGroup, string> = {
   person: "#3ef2a6",
   vehicle: "#4cc9f0",
   object: "#a78bfa",
+  plate: "#ff6b6b",
 };
 
 export const GROUP_EVENT: Record<DetectionGroup, string> = {
@@ -33,6 +36,7 @@ export const GROUP_EVENT: Record<DetectionGroup, string> = {
   person: "PERSON_DETECTED",
   vehicle: "VEHICLE_DETECTED",
   object: "OBJECT_DETECTED",
+  plate: "PLATE_DETECTED",
 };
 
 export const EVENT_TYPES = [
@@ -40,6 +44,7 @@ export const EVENT_TYPES = [
   "PERSON_DETECTED",
   "VEHICLE_DETECTED",
   "OBJECT_DETECTED",
+  "PLATE_DETECTED",
 ] as const;
 
 export function groupOf(className: string): DetectionGroup {
@@ -69,8 +74,8 @@ export interface CameraProfile {
 export const CAMERA_PROFILES: CameraProfile[] = [
   {
     code: "CAM-01",
-    name: "Fenceline North",
-    zone: "Sector 4 · North Ridge",
+    name: "Live Webcam",
+    zone: "Workstation",
     image: "/cams/fence.jpg",
     streamType: "webcam",
     persons: 2,
@@ -83,9 +88,9 @@ export const CAMERA_PROFILES: CameraProfile[] = [
   {
     code: "CAM-02",
     name: "Gate Checkpoint 4",
-    zone: "Crossing Point · Zeta",
+    zone: "Crossing Point",
     image: "/cams/checkpoint.jpg",
-    streamType: "webcam",
+    streamType: "rtsp",
     persons: 2,
     vehicles: 3,
     objects: 1,
@@ -96,9 +101,9 @@ export const CAMERA_PROFILES: CameraProfile[] = [
   {
     code: "CAM-03",
     name: "Watchtower Echo",
-    zone: "Sector 7 · Overwatch",
+    zone: "Sector 7",
     image: "/cams/watchtower.jpg",
-    streamType: "webcam",
+    streamType: "rtsp",
     persons: 3,
     vehicles: 0,
     objects: 0,
@@ -109,9 +114,9 @@ export const CAMERA_PROFILES: CameraProfile[] = [
   {
     code: "CAM-04",
     name: "Causeway Freight",
-    zone: "Sector 2 · Service Road",
+    zone: "Sector 2",
     image: "/cams/road.jpg",
-    streamType: "webcam",
+    streamType: "rtsp",
     persons: 1,
     vehicles: 3,
     objects: 1,
@@ -123,45 +128,33 @@ export const CAMERA_PROFILES: CameraProfile[] = [
 
 export interface ModelInfo {
   key: string;
-  file: string;
-  task: string;
+  name: string;
   classes: string[];
-  status: "online" | "unavailable";
-  size: string;
-  map50: number | null;
-  latency: string;
+  exists: boolean;
+  note?: string;
 }
 
+/** 1:1 match with the backend MODEL_REGISTRY keys. */
 export const MODELS: ModelInfo[] = [
   {
-    key: "face_model",
-    file: "model.pt (compact face)",
-    task: "Face Detection",
+    key: "face",
+    name: "Face Detection",
     classes: ["face"],
-    status: "online",
-    size: "6.0 MB",
-    map50: 0.912,
-    latency: "CPU optimized",
+    exists: true,
   },
   {
-    key: "object_model",
-    file: "model.pt",
-    task: "Face-only model (general classes unavailable)",
-    classes: ["FACE"],
-    status: "online",
-    size: "49.7 MB",
-    map50: 0.884,
-    latency: "~38 ms",
+    key: "person",
+    name: "Person + Clothing Analyst",
+    classes: ["person", "car", "truck", "bus", "motorbike"],
+    exists: false,
+    note: "Uses face→body fallback when no person model is installed.",
   },
   {
-    key: "plate_model",
-    file: "plate_model.pt",
-    task: "License Plate OCR",
-    classes: [],
-    status: "unavailable",
-    size: "—",
-    map50: null,
-    latency: "—",
+    key: "plate",
+    name: "License Plate",
+    classes: ["plate"],
+    exists: false,
+    note: "Uses OpenCV plate locator when no plate model is installed.",
   },
 ];
 
@@ -170,5 +163,12 @@ export const RUNTIME_CONFIG = {
   cameraIndex: 0,
   resolution: "640x480",
   device: "cpu",
-  processEveryNFrames: 1,
+  processEveryNFrames: 3,
+};
+
+/** Model key → color for the model-select dropdown badges. */
+export const MODEL_COLORS: Record<string, string> = {
+  face: "#ffb224",
+  person: "#3ef2a6",
+  plate: "#ff6b6b",
 };

@@ -3,7 +3,6 @@ import {
   CarFront,
   Check,
   Circle,
-  Database,
   LineChart,
   LocateFixed,
   PersonStanding,
@@ -16,83 +15,92 @@ import { Hero } from "@/components/landing/hero";
 import { Panel, Reveal, SectionTag, StatusDot } from "@/components/ui";
 import { GROUP_COLORS } from "@/lib/sim";
 
+const GROUPS: Record<string, keyof typeof GROUP_COLORS> = {
+  face: "face",
+  person: "person",
+  plate: "plate",
+  car: "vehicle",
+  truck: "vehicle",
+  backpack: "object",
+};
+
 const MARQUEE = [
   "FACE DETECTION",
-  "PERSON TRACKING",
-  "VEHICLE COUNTING",
-  "EVENT LEDGER",
+  "FACE-NAME RECOGNITION",
+  "PERSON + CLOTHING",
+  "DIRECTION TRACKING",
+  "PLATE LOCATOR",
+  "SUBJECT TIMELINE",
   "BORDER SECTORS",
-  "YOLOV8M INFERENCE",
-  "REST CONTRACTS",
-  "POSTGRES PERSISTENCE",
+  "MONGO PERSISTENCE",
 ];
 
 const CAPABILITIES = [
   {
     icon: ScanFace,
     title: "Face Detection",
-    body: "The compact face model flags faces without making a low-end CPU process the larger 25.9M-parameter checkpoint.",
-    tag: "MODEL · model.pt",
+    body: "A compact face checkpoint (model.pt or yolov8m-face.pt) flags faces at 320px inference, sized for a CPU-only machine.",
+    tag: "MODEL · face",
   },
   {
     icon: PersonStanding,
-    title: "Person Detection",
-    body: "Person detection is supported by the architecture, but requires a deliberately configured multi-class YOLO model. The installed model is face-only.",
-    tag: "MODEL · configure required",
+    title: "Person + Clothing",
+    body: "Person runs out of the box in FACE→BODY fallback — face box scaled to a body, with a clothing colour classifier and direction per subject. Drop in yolov8n.pt for real boxes.",
+    tag: "MODEL · fallback ready",
   },
   {
-    icon: CarFront,
-    title: "Vehicle Counting",
-    body: "Vehicle counting is ready in the pipeline, but stays disabled until a compatible model exposing vehicle classes is configured.",
-    tag: "MODEL · configure required",
+    icon: ShieldCheck,
+    title: "Face-Name Recognition",
+    body: "People enrolled through the Register page get a 64-dim CPU embedding; the live feed and analytics timeline show their name on match.",
+    tag: "ALGO · 64-dim + cosine",
   },
   {
     icon: LocateFixed,
-    title: "Persistent Tracking",
-    body: "Each detection carries a tracking ID across frames, so one person over 300 frames is one event — not 300.",
-    tag: "ALGO · track-id",
+    title: "Deduplicated Sightings",
+    body: "One subject reappearing is one sighting in MongoDB — opened when first seen, updated while present, closed when gone. No duplicate rows.",
+    tag: "STORE · mongo sightings",
   },
   {
-    icon: Database,
-    title: "Event Persistence",
-    body: "Every detection lands in a Postgres ledger — metadata only, never raw frames — queryable by any dashboard.",
-    tag: "STORE · postgres",
+    icon: CarFront,
+    title: "Plate Locator",
+    body: "OpenCV morphology finds plate candidates without any model weights. OCR is optional — without tesseract, plate_text is null.",
+    tag: "MODEL · opencv",
   },
   {
     icon: LineChart,
     title: "Live Analytics",
-    body: "Hourly rhythms, class distribution, per-camera leaders and confidence histograms computed on demand.",
+    body: "Subject timeline, per-class counts, hourly rhythms and confidence histograms computed on demand from the Mongo ledger.",
     tag: "VIEW · /api/stats",
   },
 ];
 
 const ROADMAP: Array<{ label: string; done: boolean }> = [
   { label: "Face detection over authorized webcam", done: true },
-  { label: "Person + vehicle detection with compatible model", done: false },
-  { label: "Tracking IDs and current/event count separation", done: true },
-  { label: "REST API with JSON responses", done: true },
-  { label: "Postgres event ledger and analytics dashboard", done: true },
+  { label: "Face-name recognition for registered people", done: true },
+  { label: "Person + clothing in FACE→BODY fallback", done: true },
+  { label: "Tracking IDs and deduplicated subject sightings", done: true },
+  { label: "MongoDB subject timeline (no Postgres)", done: true },
+  { label: "Real person/vehicle boxes via yolov8n.pt", done: false },
+  { label: "Plate OCR with tesseract", done: false },
   { label: "RTSP / CCTV stream ingest (replace webcam source)", done: false },
-  { label: "Multi-camera concurrent processing", done: false },
   { label: "Intrusion zones, line-crossing and loitering logic", done: false },
-  { label: "Plate OCR, GPU acceleration and edge deployment", done: false },
 ];
 
 const PRIVACY = [
   "Process only authorized camera feeds — never covert monitoring.",
   "Frames processed in memory; raw video is never stored by default.",
-  "Face detection, not face recognition — no identity inference.",
-  "Event logs carry metadata only: time, class, confidence, track ID.",
+  "Face-name recognition only for consented people enrolled through the Register page — no cloud, all local.",
+  "Event logs carry metadata only: time, class, confidence, identity, camera.",
   "Logging is configurable and streams stay private in development.",
   "API hardened for production: HTTPS, scoped CORS, validated uploads.",
 ];
 
 const CLASS_LEGEND = [
-  { cls: "face", note: "yolov8m-face" },
-  { cls: "person", note: "general model" },
-  { cls: "car", note: "vehicle set" },
-  { cls: "truck", note: "vehicle set" },
-  { cls: "motorbike", note: "vehicle set" },
+  { cls: "face", note: "model.pt" },
+  { cls: "person", note: "face→body fallback" },
+  { cls: "plate", note: "opencv locator" },
+  { cls: "car", note: "needs yolov8n.pt" },
+  { cls: "truck", note: "needs yolov8n.pt" },
   { cls: "backpack", note: "object set" },
 ];
 
@@ -140,8 +148,9 @@ export default function LandingPage() {
             <p className="mt-6 max-w-md leading-relaxed text-pale/70">
               Pixel Intelligence bolts onto the cameras already mounted on the
               fence.
-              YOLO reads every frame, tracking holds identity steady, and a
-              Postgres ledger turns motion into auditable data — without
+              YOLO reads every frame, tracking holds identity steady, the
+              registry matches names where consent exists, and a MongoDB
+              subject timeline turns motion into auditable data — without
               replacing a single camera.
             </p>
             <Link
@@ -191,7 +200,7 @@ export default function LandingPage() {
               >
                 <span
                   className="h-1.5 w-1.5 rounded-[1px]"
-                  style={{ backgroundColor: GROUP_COLORS[c.cls === "face" ? "face" : c.cls === "person" ? "person" : c.cls === "backpack" ? "object" : "vehicle"] }}
+                  style={{ backgroundColor: GROUP_COLORS[GROUPS[c.cls]] }}
                 />
                 {c.cls.toUpperCase()}
               </span>
@@ -266,9 +275,10 @@ export default function LandingPage() {
                   <span className="mb-2 font-mono text-xs text-mist">UNIQUE EVENTS LOGGED</span>
                 </div>
                 <p className="mt-5 max-w-sm leading-relaxed text-pale/70">
-                  An append-only ledger keyed by tracking ID. When a subject
-                  first crosses the threshold of confidence, one row is written
-                  to Postgres — a permanent, auditable record.
+                  A deduplicated log keyed by subject. When a subject first
+                  crosses the threshold, one sighting is opened in MongoDB —
+                  updated while present, closed when gone. One reappearance,
+                  one audit row.
                 </p>
                 <div className="mt-6 flex h-16 items-end gap-1.5">
                   {[10, 22, 35, 42, 55, 66, 74, 82, 88, 93, 97, 100].map((h, i) => (

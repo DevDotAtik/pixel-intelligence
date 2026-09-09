@@ -43,6 +43,12 @@ class DashboardTests(TestCase):
         self.assertEqual(summary['current_counts'], {'face': 1})
         self.assertEqual(summary['class_event_counts'], {'face': 1})
 
+    def test_tracker_keeps_face_id_when_small_model_box_jitters(self):
+        tracker = TrackingManager()
+        first = tracker.update([{'class': 'face', 'bbox': [100, 100, 160, 160]}])
+        second = tracker.update([{'class': 'face', 'bbox': [150, 105, 210, 165]}])
+        self.assertEqual(first[0]['tracking_id'], second[0]['tracking_id'])
+
     @patch('video_analytics.views.get_camera')
     def test_unavailable_camera_returns_clear_service_error(self, get_camera):
         class UnavailableCamera:

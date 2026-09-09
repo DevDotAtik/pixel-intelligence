@@ -1,0 +1,49 @@
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+.venv/
+backend/venv/
+build/
+dist/
+
+# --- Django ---
+*.sqlite3
+*.db
+backend/db.sqlite3
+staticfiles/
+/media/
+
+# --- FastAPI / data files ---
+backend/events/events.json
+*.events.json
+
+# --- Node / Next.js ---
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# --- Environment files ---
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# --- Logs ---
+*.log
+npm-debug.log*
+
+# --- Keep local model weights out of git (download them yourself) ---
+*.pt
+*.onnx

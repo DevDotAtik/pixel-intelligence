@@ -7,16 +7,13 @@ import { useEffect, useState } from "react";
 import { CountUp, Panel, SectionTag, StatusDot } from "@/components/ui";
 
 interface Cam {
-  id: number;
   code: string;
   name: string;
   zone: string;
   status: string;
-  streamType: string;
+  stream_type: string;
   resolution: string;
   fps: number;
-  uptime: number;
-  image: string;
   events_24h: number;
 }
 
@@ -28,46 +25,39 @@ const STATUS_META: Record<string, { tone: string; label: string }> = {
 
 export default function CamerasPage() {
   const [cameras, setCameras] = useState<Cam[]>([]);
-  const [busyId, setBusyId] = useState<number | null>(null);
-  const [online, setOnline] = useState(0);
+  const [busyCode, setBusyCode] = useState<string | null>(null);
 
   const load = () => {
     fetch("/api/cameras")
       .then((r) => r.json())
-      .then((d) => {
-        setCameras(d.cameras ?? []);
-        setOnline(d.online ?? 0);
-      })
+      .then((d) => setCameras(d.cameras ?? []))
       .catch(() => {});
   };
 
   useEffect(load, []);
 
   const setStatus = (cam: Cam, status: string) => {
-    setBusyId(cam.id);
+    setBusyCode(cam.code);
     fetch("/api/cameras", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: cam.id, status }),
+      body: JSON.stringify({ code: cam.code, status }),
     })
       .then((r) => r.json())
       .then((d) => {
         if (d.camera) {
           setCameras((prev) =>
-            prev.map((c) => (c.id === cam.id ? { ...c, status: d.camera.status } : c)),
-          );
-          setOnline((o) =>
-            status === "active"
-              ? Math.min(cameras.length, o + 1)
-              : cam.status === "active"
-                ? Math.max(0, o - 1)
-                : o,
+            prev.map((c) =>
+              c.code === cam.code ? { ...c, status: d.camera.status } : c,
+            ),
           );
         }
       })
       .catch(() => {})
-      .finally(() => setBusyId(null));
+      .finally(() => setBusyCode(null));
   };
+
+  const online = cameras.filter((c) => c.status === "active").length;
 
   return (
     <main className="pt-14">
@@ -91,19 +81,22 @@ export default function CamerasPage() {
           {cameras.map((c) => {
             const meta = STATUS_META[c.status] ?? STATUS_META.offline;
             return (
-              <Panel key={c.id} className="overflow-hidden" bracket>
+              <Panel key={c.code} className="overflow-hidden" bracket>
                 <div className="relative aspect-[16/7] overflow-hidden bg-abyss">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={c.image}
-                    alt={c.name}
+                  <div
                     className={clsx(
-                      "h-full w-full object-cover transition-all duration-700",
+                      "absolute inset-0 bg-gradient-to-br transition-all duration-700",
+                      c.code === "CAM-01"
+                        ? "from-[#123] via-[#0c1a26] to-[#07141f]"
+                        : "from-[#1a1626] via-[#131022] to-[#0b0916]",
                       c.status !== "active" && "opacity-40 saturate-50",
                     )}
                   />
                   <div className="absolute inset-0 scanlines" />
                   <div className="absolute inset-0 bg-gradient-to-t from-ink via-transparent to-ink/40" />
+                  <div className="absolute bottom-4 right-4 font-mono text-[9px] tracking-[0.28em] text-signal/50">
+                    {c.code === "CAM-01" ? "LIVE FEED" : "SIMULATED SOURCE"}
+                  </div>
                   <div className="absolute left-3 top-3 flex items-center gap-2">
                     <span
                       className={clsx(
@@ -118,7 +111,7 @@ export default function CamerasPage() {
                     </span>
                   </div>
                   <div className="absolute right-3 top-3 border border-edge bg-ink/70 px-2 py-1 font-mono text-[9px] tracking-[0.18em] text-mist backdrop-blur-sm">
-                    {c.streamType.toUpperCase()} · {c.fps}FPS
+                    {c.stream_type.toUpperCase()} · {c.fps}FPS
                   </div>
                   <div className="absolute bottom-3 left-4">
                     <div className="font-mono text-xl font-bold tracking-[0.16em] text-pale">
@@ -134,7 +127,7 @@ export default function CamerasPage() {
                   {[
                     { k: "ZONE", v: c.zone.split("·")[0].trim() },
                     { k: "RES", v: c.resolution },
-                    { k: "UPTIME", v: `${c.uptime.toFixed(1)}%` },
+                    { k: "STREAM", v: c.stream_type.toUpperCase() },
                     { k: "EVT 24H", v: c.events_24h.toLocaleString() },
                   ].map((s) => (
                     <div key={s.k} className="px-2 py-3">
@@ -157,7 +150,7 @@ export default function CamerasPage() {
                   </Link>
                   {c.status === "active" ? (
                     <button
-                      disabled={busyId === c.id}
+                      disabled={busyCode === c.code}
                       onClick={() => setStatus(c, "maintenance")}
                       className="flex items-center gap-2 border border-edge px-3 py-2.5 font-mono text-[10px] tracking-[0.18em] text-mist transition-colors hover:border-flare/50 hover:text-flare disabled:opacity-40"
                     >
@@ -166,7 +159,7 @@ export default function CamerasPage() {
                     </button>
                   ) : (
                     <button
-                      disabled={busyId === c.id}
+                      disabled={busyCode === c.code}
                       onClick={() => setStatus(c, "active")}
                       className="flex items-center gap-2 border border-edge px-3 py-2.5 font-mono text-[10px] tracking-[0.18em] text-mist transition-colors hover:border-signal/50 hover:text-signal disabled:opacity-40"
                     >
@@ -181,8 +174,8 @@ export default function CamerasPage() {
         </div>
 
         <p className="mt-6 font-mono text-[10px] leading-relaxed tracking-[0.12em] text-mist">
-          STATUS CHANGES PERSIST TO POSTGRES VIA <span className="text-frost">PATCH /api/cameras</span>.
-          IN THE REFERENCE DEPLOYMENT EACH STREAM WOULD BE AN AUTHORIZED RTSP SOURCE — HERE, A SIMULATED FRAME STORE.
+          STATUS CHANGES PERSIST TO MONGO VIA <span className="text-frost">PATCH /api/cameras</span>.
+          CAM-01 IS THE REAL WEBCAM — CAM-02…CAM-04 ARE SEEDED SIMULATED SOURCES IN THE REFERENCE DEPLOYMENT.
         </p>
       </div>
     </main>

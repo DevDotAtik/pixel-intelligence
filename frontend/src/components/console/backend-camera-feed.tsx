@@ -25,12 +25,14 @@ type SidebarResponse = {
 
 export function BackendCameraFeed({
   profile,
+  model = "face",
   paused = false,
   onEvent,
   onStats,
   className,
 }: {
   profile: CameraProfile;
+  model?: string;
   paused?: boolean;
   onEvent?: (event: SimEvent) => void;
   onStats?: (stats: FeedStats) => void;
@@ -39,7 +41,7 @@ export function BackendCameraFeed({
   const [failed, setFailed] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<string | null>(null);
   const knownTracks = useRef(new Set<number>());
-  const streamUrl = `${BACKEND_URL}/video/?camera=${encodeURIComponent(profile.code)}`;
+  const streamUrl = `${BACKEND_URL}/video/?camera=${encodeURIComponent(profile.code)}&model=${encodeURIComponent(model)}`;
 
   useEffect(() => {
     let cancelled = false;
@@ -56,6 +58,7 @@ export function BackendCameraFeed({
           person: analytics.current_person ?? 0,
           vehicle: (analytics.current_car ?? 0) + (analytics.current_truck ?? 0) + (analytics.current_bus ?? 0) + (analytics.current_motorcycle ?? 0),
           object: 0,
+          plate: analytics.current_plate ?? 0,
         };
         onStats?.({
           fps: analytics.inference_ms ? Math.min(30, 1000 / Math.max(analytics.inference_ms, 1)) : 0,
@@ -67,8 +70,14 @@ export function BackendCameraFeed({
         for (const track of tracks) {
           if (knownTracks.current.has(track.tracking_id)) continue;
           knownTracks.current.add(track.tracking_id);
+          const eventType =
+            track.class === "face"
+              ? "FACE_DETECTED"
+              : track.class === "plate"
+                ? "PLATE_DETECTED"
+                : "PERSON_DETECTED";
           onEvent?.({
-            type: track.class === "face" ? "FACE_DETECTED" : "OBJECT_DETECTED",
+            type: eventType,
             className: track.class,
             confidence: track.confidence,
             trackingId: track.tracking_id,

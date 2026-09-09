@@ -1,119 +1,107 @@
-import { db } from "@/db";
-import { ensureSeeded } from "@/lib/seed";
-import { sql } from "drizzle-orm";
+import { backend } from "@/lib/backend-proxy";
 
 export const dynamic = "force-dynamic";
 
-function rows<T>(r: unknown): T[] {
-  return (r as { rows: T[] }).rows;
-}
+type BackendSighting = {
+  _id?: string;
+  subject_key: string;
+  camera_code: string;
+  class_name: string;
+  identity: string | null;
+  registered: boolean;
+  first_seen: string;
+  last_seen: string;
+  status: string;
+  attributes: Record<string, unknown>;
+  total_detections: number;
+  max_confidence: number;
+};
+
+const EVENT_TYPES = ["face", "person", "plate"] as const;
 
 export async function GET() {
   try {
-    await ensureSeeded();
-
-    const [totals, daily, hourly, klass, perCam, confHist, recent] =
-      await Promise.all([
-        db.execute(sql`
-          SELECT count(*)::int AS n,
-                 count(DISTINCT tracking_id)::int AS tracks
-          FROM events
-          WHERE "timestamp" > now() - interval '7 days'
-        `),
-        db.execute(sql`
-          SELECT to_char(date_trunc('day', "timestamp"), 'YYYY-MM-DD') AS d,
-                 event_type,
-                 count(*)::int AS n
-          FROM events
-          WHERE "timestamp" > now() - interval '14 days'
-          GROUP BY 1, 2
-          ORDER BY 1
-        `),
-        db.execute(sql`
-          SELECT extract(hour from "timestamp")::int AS h,
-                 event_type,
-                 (count(*) / 7.0)::float AS n
-          FROM events
-          WHERE "timestamp" > now() - interval '7 days'
-          GROUP BY 1, 2
-          ORDER BY 1
-        `),
-        db.execute(sql`
-          SELECT class_name AS k,
-                 count(*)::int AS n,
-                 round(avg(confidence)::numeric, 4)::float AS avg_conf
-          FROM events
-          WHERE "timestamp" > now() - interval '7 days'
-          GROUP BY 1
-          ORDER BY 2 DESC
-        `),
-        db.execute(sql`
-          SELECT c.code, c.name, c.status, count(*)::int AS n
-          FROM events e
-          JOIN cameras c ON c.id = e.camera_id
-          WHERE e."timestamp" > now() - interval '7 days'
-          GROUP BY 1, 2, 3
-          ORDER BY 4 DESC
-        `),
-        db.execute(sql`
-          SELECT width_bucket(confidence, 0.5, 1.0, 10) AS b,
-                 count(*)::int AS n
-          FROM events
-          WHERE "timestamp" > now() - interval '7 days'
-          GROUP BY 1
-          ORDER BY 1
-        `),
-        db.execute(sql`
-          SELECT e.id, e."timestamp", e.event_type, e.class_name,
-                 e.confidence, e.tracking_id, c.code AS camera_code, c.name AS camera_name
-          FROM events e
-          JOIN cameras c ON c.id = e.camera_id
-          ORDER BY e."timestamp" DESC, e.id DESC
-          LIMIT 9
-        `),
-      ]);
-
-    const totalsRow = rows<{ n: number; tracks: number }>(totals)[0] ?? {
-      n: 0,
-      tracks: 0,
-    };
-
-    // Pivot daily + hourly rows into chart-friendly shapes.
-    const dailyMap = new Map<string, Record<string, number | string>>();
-    for (const r of rows<{ d: string; event_type: string; n: number }>(daily)) {
-      const row = dailyMap.get(r.d) ?? { day: r.d };
-      row[r.event_type] = r.n;
-      dailyMap.set(r.d, row);
-    }
-
-    const hourlyArr: Array<Record<string, number>> = Array.from(
-      { length: 24 },
-      (_, h) => ({ hour: h }),
+    const resp = await fetch(`${backend("/api/events")}?limit=500`, { cache: "no-store" });
+    if (!resp.ok) throw new Error(`FastAPI returned ${resp.status}`);
+    const payload = (await resp.json()) as { events?: BackendSighting[] };
+    const sightings = (payload.events ?? []).filter(
+      (e) => Boolean(e.first_seen) && Boolean(e.last_seen),
     );
-    for (const r of rows<{ h: number; event_type: string; n: number }>(hourly)) {
-      hourlyArr[r.h][r.event_type] = Math.round(r.n * 10) / 10;
+    const now = Date.now();
+    const recent7d = sightings.filter(
+      (e) => now - new Date(e.last_seen).getTime() <= 7 * 86_400_000,
+    );
+    const recent14d = sightings.filter(
+      (e) => now - new Date(e.last_seen).getTime() <= 14 * 86_400_000,
+    );
+
+    const dailyMap = new Map<string, Record<string, string | number>>();
+    for (const s of recent14d) {
+      const day = s.first_seen.slice(0, 10);
+      const row = dailyMap.get(day) ?? { day };
+      row[s.class_name] = Number(row[s.class_name] ?? 0) + 1;
+      dailyMap.set(day, row);
     }
+
+    const hourly = Array.from({ length: 24 }, (_, hour) => ({ hour } as Record<string, number>));
+    for (const s of recent7d) {
+      const hour = new Date(s.first_seen).getHours();
+      hourly[hour][s.class_name] = Number(hourly[hour][s.class_name] ?? 0) + 1;
+    }
+    for (const row of hourly) {
+      for (const type of EVENT_TYPES) {
+        row[type] = Math.round((Number(row[type] ?? 0) / 7) * 10) / 10;
+      }
+    }
+
+    const classMap = new Map<string, { n: number; confidence: number }>();
+    for (const s of recent7d) {
+      const item = classMap.get(s.class_name) ?? { n: 0, confidence: 0 };
+      item.n += 1;
+      item.confidence += s.max_confidence || 0;
+      classMap.set(s.class_name, item);
+    }
+    const classes = [...classMap.entries()]
+      .map(([k, v]) => ({
+        k,
+        n: v.n,
+        avg_conf: Math.round((v.confidence / Math.max(1, v.n)) * 10_000) / 10_000,
+      }))
+      .sort((a, b) => b.n - a.n);
+
+    const confidence_hist = Array.from({ length: 10 }, (_, i) => ({ b: i + 1, n: 0 }));
+    for (const s of recent7d) {
+      const bucket = Math.max(1, Math.min(10, Math.ceil(((s.max_confidence || 0.5) - 0.5) * 20)));
+      confidence_hist[bucket - 1].n += 1;
+    }
+
+    const uniqueIdentities = new Set(
+      recent7d.map((s) => s.identity).filter((x): x is string => Boolean(x)),
+    );
+
+    const camCounts = new Map<string, number>();
+    for (const s of recent7d) camCounts.set(s.camera_code, (camCounts.get(s.camera_code) ?? 0) + 1);
+    const cameras = [...camCounts.entries()].map(([code, n]) => ({
+      code,
+      name: code,
+      status: "active" as const,
+      n,
+    }));
 
     return Response.json({
       totals: {
-        events_7d: totalsRow.n,
-        unique_tracks: totalsRow.tracks,
-        avg_per_hour: Math.round((totalsRow.n / 168) * 10) / 10,
+        events_7d: recent7d.length,
+        unique_tracks: uniqueIdentities.size,
+        avg_per_hour: Math.round((recent7d.length / 168) * 10) / 10,
       },
-      daily: [...dailyMap.values()],
-      hourly: hourlyArr,
-      classes: rows<{ k: string; n: number; avg_conf: number }>(klass),
-      cameras: rows<{ code: string; name: string; status: string; n: number }>(
-        perCam,
-      ),
-      confidence_hist: rows<{ b: number; n: number }>(confHist),
-      recent: rows<Record<string, unknown>>(recent),
+      daily: [...dailyMap.values()].sort((a, b) => String(a.day).localeCompare(String(b.day))),
+      hourly,
+      classes,
+      cameras,
+      confidence_hist,
       generated_at: new Date().toISOString(),
     });
-  } catch (err) {
-    return Response.json(
-      { error: "stats_query_failed", detail: String(err) },
-      { status: 500 },
-    );
+  } catch (error) {
+    return Response.json({ error: "backend_stats_unavailable", detail: String(error) }, { status: 503 });
   }
 }

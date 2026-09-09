@@ -6,20 +6,23 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ClassDot, ConfBar, Panel, SectionTag, StatusDot } from "@/components/ui";
 import { CAMERA_PROFILES, GROUP_COLORS, groupOf } from "@/lib/sim";
 
-interface EventRow {
-  id: number;
-  timestamp: string;
-  eventType: string;
-  className: string;
-  confidence: number;
-  trackingId: number;
-  cameraCode: string;
-  cameraName: string;
+const GROUPS = ["all", "face", "person", "plate"];
+
+interface SightingRow {
+  subject_key: string;
+  camera_code: string;
+  class_name: string;
+  identity: string | null;
+  registered: boolean;
+  first_seen: string;
+  last_seen: string;
+  status: string;
+  attributes: Record<string, unknown>;
+  total_detections: number;
+  max_confidence: number;
 }
 
 const PAGE = 25;
-const GROUPS = ["all", "person", "face", "vehicle", "object"];
-const TYPES = ["all", "FACE_DETECTED", "PERSON_DETECTED", "VEHICLE_DETECTED", "OBJECT_DETECTED"];
 
 function fmt(iso: string) {
   const d = new Date(iso);
@@ -27,26 +30,25 @@ function fmt(iso: string) {
   return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())} · ${p(d.getDate())}/${p(d.getMonth() + 1)}`;
 }
 
+function eventLabel(cls: string): string {
+  if (cls === "face") return "FACE_DETECTED";
+  if (cls === "plate") return "PLATE_DETECTED";
+  return "PERSON_DETECTED";
+}
+
 export default function EventsPage() {
-  const [rows, setRows] = useState<EventRow[]>([]);
+  const [rows, setRows] = useState<SightingRow[]>([]);
   const [count, setCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [camera, setCamera] = useState("all");
   const [group, setGroup] = useState("all");
-  const [type, setType] = useState("all");
-  const [minConf, setMinConf] = useState(0);
-  const [track, setTrack] = useState("");
   const [page, setPage] = useState(0);
 
   const query = useMemo(() => {
     const q = new URLSearchParams({ limit: String(PAGE), offset: String(page * PAGE) });
     if (camera !== "all") q.set("camera", camera);
-    if (group !== "all") q.set("class", group);
-    if (type !== "all") q.set("type", type);
-    if (minConf > 0) q.set("min_conf", minConf.toFixed(2));
-    if (track.trim()) q.set("track", track.trim());
     return q.toString();
-  }, [camera, group, type, minConf, track, page]);
+  }, [camera, page]);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -54,7 +56,7 @@ export default function EventsPage() {
       .then((r) => r.json())
       .then((d) => {
         setRows(d.events ?? []);
-        setCount(d.count ?? 0);
+        setCount(d.total ?? d.count ?? 0);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -66,6 +68,11 @@ export default function EventsPage() {
     return () => { window.clearTimeout(initial); clearInterval(id); };
   }, [load]);
 
+  const filtered = useMemo(() => {
+    if (group === "all") return rows;
+    return rows.filter((r) => groupOf(r.class_name) === group);
+  }, [rows, group]);
+
   const pages = Math.max(1, Math.ceil(count / PAGE));
 
   return (
@@ -75,7 +82,7 @@ export default function EventsPage() {
           <div>
             <SectionTag index="L1" label="EVENT LEDGER" />
             <h1 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
-              Every detection, <span className="text-signal text-glow">on record</span>
+              Every sighting, <span className="text-signal text-glow">on record</span>
             </h1>
           </div>
           <div className="flex items-center gap-2">
@@ -100,7 +107,7 @@ export default function EventsPage() {
 
         {/* filters */}
         <Panel className="mt-6 p-4" bracket={false}>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
             <FilterSelect label="CAMERA" value={camera} onChange={(v) => { setCamera(v); setPage(0); }}>
               <option value="all">ALL CAMERAS</option>
               {CAMERA_PROFILES.map((c) => (
@@ -112,35 +119,10 @@ export default function EventsPage() {
                 <option key={g} value={g}>{g.toUpperCase()}</option>
               ))}
             </FilterSelect>
-            <FilterSelect label="EVENT TYPE" value={type} onChange={(v) => { setType(v); setPage(0); }}>
-              {TYPES.map((t) => (
-                <option key={t} value={t}>{t === "all" ? "ALL TYPES" : t}</option>
-              ))}
-            </FilterSelect>
-            <div>
-              <div className="mb-1.5 font-mono text-[9px] tracking-[0.22em] text-mist">
-                MIN CONF · {minConf.toFixed(2)}
-              </div>
-              <input
-                type="range"
-                min={0}
-                max={0.9}
-                step={0.05}
-                value={minConf}
-                onChange={(e) => { setMinConf(Number(e.target.value)); setPage(0); }}
-                className="h-9 w-full accent-signal"
-              />
-            </div>
-            <div>
-              <div className="mb-1.5 font-mono text-[9px] tracking-[0.22em] text-mist">
-                TRACK ID
-              </div>
-              <input
-                value={track}
-                onChange={(e) => { setTrack(e.target.value.replace(/\D/g, "")); setPage(0); }}
-                placeholder="e.g. 042"
-                className="h-9 w-full border border-edge bg-abyss px-3 font-mono text-[11px] text-pale outline-none placeholder:text-mist/50 focus:border-signal/50"
-              />
+            <div className="flex items-end">
+              <span className="font-mono text-[9px] tracking-[0.2em] text-mist">
+                {count} MATCHING SIGHTINGS · ONE ROW PER REAPPEARANCE
+              </span>
             </div>
           </div>
         </Panel>
@@ -148,67 +130,84 @@ export default function EventsPage() {
         {/* table */}
         <Panel className="mt-4 overflow-hidden" bracket>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px] text-left">
+            <table className="w-full min-w-[820px] text-left">
               <thead>
                 <tr className="border-b border-edge bg-abyss/70 font-mono text-[9px] tracking-[0.26em] text-mist">
-                  <th className="px-4 py-3 font-medium">TIME</th>
+                  <th className="px-4 py-3 font-medium">FIRST SEEN</th>
                   <th className="px-4 py-3 font-medium">EVENT</th>
                   <th className="px-4 py-3 font-medium">CLASS</th>
+                  <th className="px-4 py-3 font-medium">IDENTITY</th>
                   <th className="px-4 py-3 font-medium">CONFIDENCE</th>
-                  <th className="px-4 py-3 font-medium">TRACK</th>
                   <th className="px-4 py-3 font-medium">CAMERA</th>
                   <th className="px-4 py-3 text-right font-medium">STATUS</th>
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r) => (
+                {filtered.map((r) => (
                   <tr
-                    key={r.id}
+                    key={r.subject_key}
                     className="border-b border-edge/50 transition-colors last:border-0 hover:bg-signal/5"
                   >
                     <td className="px-4 py-2.5 font-mono text-[11px] tabular-nums text-mist">
-                      {fmt(r.timestamp)}
+                      {fmt(r.first_seen)}
                     </td>
                     <td className="px-4 py-2.5">
                       <span
                         className="inline-block border px-2 py-0.5 font-mono text-[10px] font-bold tracking-[0.1em]"
                         style={{
-                          color: GROUP_COLORS[groupOf(r.className)],
-                          borderColor: `${GROUP_COLORS[groupOf(r.className)]}44`,
-                          backgroundColor: `${GROUP_COLORS[groupOf(r.className)]}11`,
+                          color: GROUP_COLORS[groupOf(r.class_name)],
+                          borderColor: `${GROUP_COLORS[groupOf(r.class_name)]}44`,
+                          backgroundColor: `${GROUP_COLORS[groupOf(r.class_name)]}11`,
                         }}
                       >
-                        {r.eventType}
+                        {eventLabel(r.class_name)}
                       </span>
                     </td>
                     <td className="px-4 py-2.5">
                       <span className="flex items-center gap-2 font-mono text-[11px] text-pale/85">
-                        <ClassDot cls={r.className} />
-                        {r.className}
+                        <ClassDot cls={r.class_name} />
+                        {r.class_name}
                       </span>
                     </td>
                     <td className="px-4 py-2.5">
+                      {r.identity ? (
+                        <span className="flex items-center gap-2 font-mono text-[11px] text-pale">
+                          {r.identity}
+                          {r.registered && (
+                            <span className="border border-signal/40 bg-signal/10 px-1.5 py-px text-[8px] tracking-[0.12em] text-signal">
+                              REGISTERED
+                            </span>
+                          )}
+                        </span>
+                      ) : (
+                        <span className="font-mono text-[10px] text-mist/60">UNKNOWN</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2.5">
                       <span className="flex items-center gap-2 font-mono text-[11px] tabular-nums text-pale/85">
-                        <ConfBar value={r.confidence} />
-                        {r.confidence.toFixed(3)}
+                        <ConfBar value={r.max_confidence} />
+                        {r.max_confidence.toFixed(3)}
                       </span>
                     </td>
-                    <td className="px-4 py-2.5 font-mono text-[11px] tabular-nums text-mist">
-                      #{String(r.trackingId).padStart(3, "0")}
-                    </td>
                     <td className="px-4 py-2.5 font-mono text-[11px] text-pale/85">
-                      {r.cameraCode}
-                      <span className="ml-2 hidden text-mist lg:inline">{r.cameraName.toUpperCase()}</span>
+                      {r.camera_code}
+                      <span className="ml-2 hidden text-mist lg:inline">
+                        ×{r.total_detections} FRAMES
+                      </span>
                     </td>
                     <td className="px-4 py-2.5 text-right">
-                      <StatusDot tone="signal" ping={false} className="ml-auto" />
+                      <StatusDot
+                        tone={r.status === "closed" ? "mist" : "signal"}
+                        ping={r.status === "open"}
+                        className="ml-auto"
+                      />
                     </td>
                   </tr>
                 ))}
-                {rows.length === 0 && !loading && (
+                {filtered.length === 0 && !loading && (
                   <tr>
                     <td colSpan={7} className="px-4 py-10 text-center font-mono text-[11px] tracking-[0.2em] text-mist">
-                      NO EVENTS MATCH THIS FILTER SET
+                      NO SIGHTINGS MATCH THIS FILTER SET
                     </td>
                   </tr>
                 )}
@@ -220,7 +219,7 @@ export default function EventsPage() {
         {/* pagination */}
         <div className="mt-4 flex items-center justify-between">
           <span className="font-mono text-[10px] tracking-[0.16em] text-mist">
-            {count.toLocaleString()} MATCHING ROWS · PAGE {page + 1} / {pages}
+            {count.toLocaleString()} SIGHTINGS · PAGE {page + 1} / {pages}
           </span>
           <div className="flex items-center gap-2">
             <button

@@ -21,6 +21,8 @@ import {
   GROUP_COLORS,
   GROUP_LABEL,
   MODELS,
+  MODEL_COLORS,
+  RUNTIME_CONFIG,
   type DetectionGroup,
 } from "@/lib/sim";
 import { Corners, Panel, StatusDot } from "@/components/ui";
@@ -39,7 +41,7 @@ const THREATS = [
   { label: "HIGH", density: 1.7, tone: "text-alert", activeCls: "border-alert/60 text-alert" },
 ];
 
-const GROUP_ORDER: DetectionGroup[] = ["person", "face", "vehicle", "object"];
+const GROUP_ORDER: DetectionGroup[] = ["face", "person", "plate", "vehicle", "object"];
 
 function timeOf(iso: string) {
   try {
@@ -53,23 +55,23 @@ function timeOf(iso: string) {
 
 export function ConsoleClient({ initialCam = 0 }: { initialCam?: number }) {
   const [camIdx, setCamIdx] = useState(initialCam);
+  const [model, setModel] = useState<string>("face");
   const [paused, setPaused] = useState(false);
   const [threat, setThreat] = useState(1);
   const [ticker, setTicker] = useState<TickerEvent[]>([]);
   const [session, setSession] = useState<SessionCounts>({
     face: 0,
     person: 0,
+    plate: 0,
     vehicle: 0,
     object: 0,
     total: 0,
   });
   const [stats, setStats] = useState<FeedStats | null>(null);
-  const [persisted, setPersisted] = useState(0);
   const [camStatus, setCamStatus] = useState<Record<string, string>>({});
   const [clockNow, setClockNow] = useState(0);
 
   const seqRef = useRef(0);
-  const queueRef = useRef<SimEvent[]>([]);
 
   useEffect(() => {
     const timer = window.setInterval(() => setClockNow(Date.now()), 1000);
@@ -94,41 +96,13 @@ export function ConsoleClient({ initialCam = 0 }: { initialCam?: number }) {
     );
     setSession((s) => {
       const group = (
-        { face: "face", person: "person", car: "vehicle", truck: "vehicle", bus: "vehicle", motorbike: "vehicle" } as Record<string, DetectionGroup>
+        { face: "face", person: "person", car: "vehicle", truck: "vehicle", bus: "vehicle", motorbike: "vehicle", plate: "plate" } as Record<string, DetectionGroup>
       )[e.className] ?? "object";
       return { ...s, [group]: s[group] + 1, total: s.total + 1 };
     });
-    queueRef.current.push(e);
   }, []);
 
   const handleStats = useCallback((s: FeedStats) => setStats(s), []);
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      const batch = queueRef.current;
-      if (batch.length === 0) return;
-      queueRef.current = [];
-      fetch("/api/events", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          events: batch.map((e) => ({
-            event_type: e.type,
-            class_name: e.className,
-            confidence: e.confidence,
-            tracking_id: e.trackingId,
-            camera: e.camera,
-          })),
-        }),
-      })
-        .then((r) => (r.ok ? r.json() : null))
-        .then((d) => {
-          if (d?.inserted) setPersisted((p) => p + d.inserted);
-        })
-        .catch(() => {});
-    }, 2500);
-    return () => clearInterval(id);
-  }, []);
 
   const rate = useMemo(() => {
     const buckets = new Array(12).fill(0) as number[];
@@ -147,13 +121,12 @@ export function ConsoleClient({ initialCam = 0 }: { initialCam?: number }) {
 
   const resetSession = () => {
     setTicker([]);
-    setSession({ face: 0, person: 0, vehicle: 0, object: 0, total: 0 });
-    setPersisted(0);
+    setSession({ face: 0, person: 0, plate: 0, vehicle: 0, object: 0, total: 0 });
   };
 
   return (
-    <main className="pt-14">
-      <div className="mx-auto max-w-[1500px] px-4 py-5 sm:px-6">
+    <main className="min-h-[calc(100vh-3.5rem)] w-full pt-14">
+      <div className="mx-auto w-full max-w-none px-4 py-5 sm:px-6 lg:px-8">
         {/* header */}
         <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -167,6 +140,29 @@ export function ConsoleClient({ initialCam = 0 }: { initialCam?: number }) {
             </h1>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center border border-edge bg-panel font-mono text-[10px] tracking-[0.18em]">
+              {MODELS.map((m) => {
+                const active = model === m.key;
+                const color = MODEL_COLORS[m.key] ?? "#a78bfa";
+                return (
+                  <button
+                    key={m.key}
+                    onClick={() => setModel(m.key)}
+                    title={m.note}
+                    className={clsx(
+                      "flex items-center gap-1.5 border-l border-edge px-3 py-2 transition-colors first:border-l-0",
+                      active ? "text-pale" : "text-mist hover:text-pale",
+                    )}
+                  >
+                    <span
+                      className="h-1.5 w-1.5 rounded-[1px]"
+                      style={{ backgroundColor: active ? color : "#3a4660" }}
+                    />
+                    {m.name.toUpperCase()}
+                  </button>
+                );
+              })}
+            </div>
             <div className="flex items-center border border-edge bg-panel font-mono text-[10px] tracking-[0.18em]">
               {THREATS.map((t, i) => (
                 <button
@@ -198,9 +194,9 @@ export function ConsoleClient({ initialCam = 0 }: { initialCam?: number }) {
           </div>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-12">
+        <div className="grid min-w-0 gap-4 lg:grid-cols-12 lg:items-start">
           {/* feed column */}
-          <div className="space-y-4 lg:col-span-8">
+          <div className="min-w-0 space-y-4 lg:col-span-9">
             <Panel bracket tone="border-signal/50" className="bg-abyss/90">
               <div className="flex items-center justify-between border-b border-edge px-4 py-2.5">
                 <div className="flex items-center gap-3">
@@ -223,40 +219,34 @@ export function ConsoleClient({ initialCam = 0 }: { initialCam?: number }) {
 
               {profile.code === "CAM-01" ? (
                 <BackendCameraFeed
-                  key="backend-cam-01"
+                  key={`backend-cam-01-${model}`}
                   profile={profile}
+                  model={model}
                   paused={paused}
                   onEvent={handleEvent}
                   onStats={handleStats}
                   className="aspect-video w-full"
                 />
               ) : (
-                <CameraFeed
-                  key={profile.code}
-                  profile={profile}
-                  live
-                  paused={paused}
-                  density={density}
-                  onEvent={handleEvent}
-                  onStats={handleStats}
-                  className="aspect-video w-full"
-                />
+                <div className="grid aspect-video w-full place-items-center bg-abyss font-mono text-xs tracking-[0.2em] text-mist">
+                  {profile.code} · NO FEED CONFIGURED
+                </div>
               )}
 
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-edge px-4 py-2.5 font-mono text-[10px] tracking-[0.16em] text-mist">
                 <div className="flex items-center gap-2">
                   <Crosshair className="h-3.5 w-3.5 text-signal" />
-                  <span>ATTR: FACE · LIVE YOLO MODEL</span>
+                  <span>MODEL: {MODELS.find((m) => m.key === model)?.name.toUpperCase() ?? "FACE"}</span>
                 </div>
                 <span className="text-signal">THREAT LEVEL: {THREATS[threat].label}</span>
               </div>
             </Panel>
 
             {/* camera thumbs */}
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-4">
               {CAMERA_PROFILES.map((p, i) => {
                 const active = i === camIdx;
-                const status = camStatus[p.code] ?? "active";
+                const status = i === 0 ? (camStatus[p.code] ?? "active") : "offline";
                 return (
                   <button
                     key={p.code}
@@ -268,12 +258,7 @@ export function ConsoleClient({ initialCam = 0 }: { initialCam?: number }) {
                         : "border-edge hover:border-edge2 opacity-80 hover:opacity-100",
                     )}
                   >
-                    <CameraFeed
-                      profile={p}
-                      compact
-                      live={false}
-                      className="aspect-video w-full"
-                    />
+                    {i === 0 ? <CameraFeed profile={p} compact live={false} className="aspect-video w-full" /> : <div className="grid aspect-video w-full place-items-center bg-abyss font-mono text-[10px] tracking-[0.18em] text-mist">NO FEED</div>}
                     <div className="flex items-center justify-between border-t border-edge bg-panel/90 px-2 py-1.5">
                       <span className={clsx("font-mono text-[10px] font-bold tracking-[0.14em]", active ? "text-signal" : "text-pale")}>
                         {p.code}
@@ -290,7 +275,7 @@ export function ConsoleClient({ initialCam = 0 }: { initialCam?: number }) {
           </div>
 
           {/* right column */}
-          <div className="space-y-4 lg:col-span-4">
+          <div className="min-w-0 space-y-4 lg:col-span-3">
             <Panel className="p-4">
               <PanelTitle icon={<ScanEye className="h-3.5 w-3.5" />} label="IN FRAME — CURRENT COUNT" />
               <div className="mt-3 grid grid-cols-2 gap-2">
@@ -328,21 +313,26 @@ export function ConsoleClient({ initialCam = 0 }: { initialCam?: number }) {
                 </div>
               </div>
               <div className="mt-3 space-y-2.5">
-                {MODELS.map((m) => (
-                  <div key={m.key} className="flex items-center justify-between gap-2">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <StatusDot tone={m.status === "online" ? "signal" : "alert"} ping={false} />
-                      <span className="truncate font-mono text-[10px] tracking-[0.08em] text-pale">{m.file}</span>
+                {MODELS.map((m) => {
+                  const color = MODEL_COLORS[m.key] ?? "#a78bfa";
+                  return (
+                    <div key={m.key} className="flex items-center justify-between gap-2">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <StatusDot tone={m.exists ? "signal" : "alert"} ping={false} />
+                        <span className="truncate font-mono text-[10px] tracking-[0.08em] text-pale">{m.name}</span>
+                      </div>
+                      <span className="font-mono text-[9px]" style={{ color }}>
+                        {m.exists ? "READY" : "FALLBACK"}
+                      </span>
                     </div>
-                    <span className="font-mono text-[10px] text-mist">{m.latency}</span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               <div className="mt-3 flex items-center justify-between border-t border-edge pt-3 font-mono text-[10px] tracking-[0.14em] text-mist">
                 <span className="flex items-center gap-1.5">
                   <Cpu className="h-3 w-3" /> DEVICE
                 </span>
-                <span className="text-pale">CPU · 1 THREAD</span>
+                <span className="text-pale">CPU · {RUNTIME_CONFIG.device.toUpperCase()}</span>
               </div>
             </Panel>
 
@@ -367,16 +357,16 @@ export function ConsoleClient({ initialCam = 0 }: { initialCam?: number }) {
               </div>
               <div className="mt-2 flex items-center justify-between font-mono text-[9px] tracking-[0.14em] text-mist">
                 <span className="flex items-center gap-1.5">
-                  <Database className="h-3 w-3 text-signal" /> POSTGRES SYNC
+                  <Database className="h-3 w-3 text-signal" /> MONGO TIMELINE
                 </span>
-                <span className="text-signal">{persisted} ROWS ↗</span>
+                <span className="text-signal">LIVE ↗</span>
               </div>
             </Panel>
           </div>
         </div>
 
         {/* event stream */}
-        <Panel className="mt-4">
+        <Panel className="mt-4 w-full min-w-0">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-edge px-4 py-2.5">
             <div className="flex items-center gap-2 font-mono text-[10px] tracking-[0.22em] text-mist">
               <Activity className="h-3.5 w-3.5 text-signal" />
@@ -415,7 +405,7 @@ export function ConsoleClient({ initialCam = 0 }: { initialCam?: number }) {
                     style={{
                       backgroundColor:
                         GROUP_COLORS[
-                          ({ face: "face", person: "person", car: "vehicle", truck: "vehicle", bus: "vehicle", motorbike: "vehicle" } as Record<string, DetectionGroup>)[e.className] ?? "object"
+                          ({ face: "face", person: "person", car: "vehicle", truck: "vehicle", bus: "vehicle", motorbike: "vehicle", plate: "plate" } as Record<string, DetectionGroup>)[e.className] ?? "object"
                         ],
                     }}
                   />

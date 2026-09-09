@@ -1,0 +1,1 @@
+"""Detection subpackage — face / person / plate analyzers."""

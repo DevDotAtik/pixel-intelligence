@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 const LINKS = [
   { href: "/", label: "OVERVIEW" },
   { href: "/console", label: "LIVE CONSOLE" },
+  { href: "/register", label: "REGISTER" },
   { href: "/analytics", label: "ANALYTICS" },
   { href: "/events", label: "EVENTS" },
   { href: "/cameras", label: "CAMERAS" },
@@ -44,7 +45,7 @@ export function SiteNav() {
               PIXEL INTELLIGENCE
             </span>
             <span className="mt-1 font-mono text-[9px] tracking-[0.28em] text-mist">
-              SIH·187 BORDER ANALYTICS
+              AI VIDEO ANALYTICS
             </span>
           </span>
         </Link>

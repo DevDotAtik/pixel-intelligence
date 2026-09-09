@@ -61,6 +61,7 @@ const EVENT_FROM_GROUP: Record<DetectionGroup, string> = {
   person: "PERSON_DETECTED",
   vehicle: "VEHICLE_DETECTED",
   object: "OBJECT_DETECTED",
+  plate: "PLATE_DETECTED",
 };
 
 function drawPerson(
@@ -337,7 +338,7 @@ export function CameraFeed({
         st.statsTimer += dt;
         if (st.statsTimer > 0.25 && cb.live) {
           st.statsTimer = 0;
-          const counts: Record<DetectionGroup, number> = { face: 0, person: 0, vehicle: 0, object: 0 };
+          const counts: Record<DetectionGroup, number> = { face: 0, person: 0, vehicle: 0, object: 0, plate: 0 };
           for (const e of st.entities) {
             counts[groupOf(e.cls)]++;
             if (e.hasFace) counts.face++;

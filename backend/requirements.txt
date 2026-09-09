@@ -1,0 +1,27 @@
+# --- Core server ---
+fastapi>=0.110
+uvicorn[standard]>=0.29
+
+# --- Computer vision ---
+opencv-python>=4.9          # image + video processing (use opencv-python-headless on servers)
+opencv-python-headless>=4.9
+numpy>=1.26
+
+# --- Detection models ---
+ultralytics>=8.2
+torch>=2.2                   # CPU build is fine; GPU optional
+
+# --- Database ---
+pymongo>=4.6                # MongoDB driver (primary event/subject/registration store)
+
+# --- Django camera gateway (serves the MJPEG webcam stream) ---
+Django>=5.0
+djangorestframework>=3.15
+django-cors-headers>=4.3
+requests>=2.31
+
+# --- Optional: license plate OCR (install tesseract-ocr system package too) ---
+# pytesseract>=0.3.10
+
+# --- Optional: better face recognition (swap-in for the default histogram embedder) ---
+# face-recognition>=1.3
