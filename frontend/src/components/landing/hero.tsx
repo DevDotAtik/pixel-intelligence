@@ -70,14 +70,6 @@ export function Hero() {
       <div className="pointer-events-none absolute inset-0 grid-bg" />
       <div className="absolute inset-x-0 h-px bg-signal/40 sweep-line" style={{ top: "-12%" }} />
 
-      {/* side rails */}
-      <div className="pointer-events-none absolute left-5 top-1/2 z-10 hidden -translate-y-1/2 -rotate-90 font-mono text-[10px] tracking-[0.4em] text-mist xl:block">
-        SECTOR 4 · NORTH RIDGE · 28.6139°N 77.2090°E
-      </div>
-      <div className="pointer-events-none absolute right-5 top-1/2 z-10 hidden -translate-y-1/2 rotate-90 font-mono text-[10px] tracking-[0.4em] text-mist xl:block">
-        YOLOV8M-FACE + MODEL.PT · 1280×720 · CPU
-      </div>
-
       {/* content */}
       <div className="relative z-10 mx-auto flex w-full max-w-[1500px] flex-1 flex-col justify-center px-4 pb-16 pt-36 sm:px-6">
         <motion.div

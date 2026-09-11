@@ -16,7 +16,7 @@ export function Corners({
 }) {
   const base = clsx("pointer-events-none absolute h-2.5 w-2.5", tone);
   return (
-    <span aria-hidden className={clsx("absolute inset-0", className)}>
+    <span aria-hidden className={clsx("pointer-events-none absolute inset-0", className)}>
       <i className={clsx(base, "left-0 top-0 border-l border-t")} />
       <i className={clsx(base, "right-0 top-0 border-r border-t")} />
       <i className={clsx(base, "bottom-0 left-0 border-b border-l")} />

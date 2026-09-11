@@ -378,14 +378,6 @@ export function CameraFeed({
       ctx.fillStyle = "rgba(2, 6, 8, 0.38)";
       ctx.fillRect(0, 0, W, H);
 
-      // reticle
-      ctx.strokeStyle = "rgba(62,242,166,0.13)";
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(W / 2 - 12, H / 2); ctx.lineTo(W / 2 + 12, H / 2);
-      ctx.moveTo(W / 2, H / 2 - 12); ctx.lineTo(W / 2, H / 2 + 12);
-      ctx.stroke();
-
       // entities + detection overlays
       for (const e of st.entities) {
         const hPx = e.hFrac * H;
@@ -418,23 +410,6 @@ export function CameraFeed({
           const fConf = Math.min(0.995, Math.max(0.5, e.faceConf + Math.sin(t * 2.3 + e.phase) * 0.03));
           drawBox(ctx, fx, fy, fS, fS * 1.15, GROUP_COLORS.face, `FACE ${fConf.toFixed(2)}`, alpha, !compact, true);
         }
-      }
-
-      // bottom telemetry strip
-      if (!compact) {
-        ctx.fillStyle = "rgba(3,8,10,0.55)";
-        ctx.fillRect(0, H - 22, W, 22);
-        ctx.font = '500 10px "JetBrains Mono", monospace';
-        ctx.fillStyle = "rgba(125,150,141,0.9)";
-        ctx.fillText(
-          `YOLOv8m-face + model.pt · thr 0.50 · ${st.nextTrack - 1} unique tracks`,
-          10,
-          H - 8,
-        );
-        ctx.textAlign = "right";
-        ctx.fillStyle = "rgba(62,242,166,0.85)";
-        ctx.fillText("IR-ENHANCED", W - 10, H - 8);
-        ctx.textAlign = "left";
       }
     };
 

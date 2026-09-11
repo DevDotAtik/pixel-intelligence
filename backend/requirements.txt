@@ -21,7 +21,13 @@ django-cors-headers>=4.3
 requests>=2.31
 
 # --- Optional: license plate OCR (install tesseract-ocr system package too) ---
-# pytesseract>=0.3.10
+pytesseract>=0.3.10
+
+# --- Face recognition embedder (ArcFace ONNX, run via onnxruntime) ---
+# The app uses `models/arc_face.onnx` (ArcFace embedding) when present; without
+# it the lighter-but-less-accurate histogram embedder is used for registration
+# matching (see README §5 "Face recognition").
+onnxruntime>=1.17
 
 # --- Optional: better face recognition (swap-in for the default histogram embedder) ---
 # face-recognition>=1.3

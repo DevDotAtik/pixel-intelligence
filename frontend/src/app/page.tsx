@@ -81,7 +81,7 @@ const ROADMAP: Array<{ label: string; done: boolean }> = [
   { label: "Tracking IDs and deduplicated subject sightings", done: true },
   { label: "MongoDB subject timeline (no Postgres)", done: true },
   { label: "Real person/vehicle boxes via yolov8n.pt", done: false },
-  { label: "Plate OCR with tesseract", done: false },
+  { label: "Plate OCR with tesseract", done: true },
   { label: "RTSP / CCTV stream ingest (replace webcam source)", done: false },
   { label: "Intrusion zones, line-crossing and loitering logic", done: false },
 ];

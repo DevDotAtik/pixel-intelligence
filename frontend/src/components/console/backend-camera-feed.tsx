@@ -40,8 +40,13 @@ export function BackendCameraFeed({
 }) {
   const [failed, setFailed] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<string | null>(null);
+  const [mirrorMode, setMirrorMode] = useState<"auto" | "on" | "off">("auto");
   const knownTracks = useRef(new Set<number>());
-  const streamUrl = `${BACKEND_URL}/video/?camera=${encodeURIComponent(profile.code)}&model=${encodeURIComponent(model)}`;
+  const mirrorParam = mirrorMode === "auto" ? "" : `&mirror=${mirrorMode === "on" ? 1 : 0}`;
+  const streamUrl = `${BACKEND_URL}/video/?camera=${encodeURIComponent(profile.code)}&model=${encodeURIComponent(model)}${mirrorParam}`;
+
+  const cycleMirror = () =>
+    setMirrorMode((m) => (m === "auto" ? "on" : m === "on" ? "off" : "auto"));
 
   useEffect(() => {
     let cancelled = false;
@@ -107,12 +112,24 @@ export function BackendCameraFeed({
       {paused && <div className="absolute inset-0 grid place-items-center bg-abyss/85 font-mono text-xs tracking-[0.2em] text-flare">STREAM PAUSED</div>}
       {failed && !paused && (
         <div className="absolute inset-0 grid place-items-center bg-abyss px-6 text-center font-mono text-xs tracking-[0.12em] text-alert">
-          <div><p>CAMERA STREAM UNAVAILABLE</p><p className="mt-2 text-[10px] text-mist">Check Django, FastAPI, and CAMERA_INDEX=0.<br />CAM-01 is the console tile; the device is /dev/video0.</p><button className="mt-4 border border-alert/50 px-3 py-2 text-[10px] text-alert" onClick={() => { setFailed(false); window.location.reload(); }}>RECONNECT</button></div>
+          <div><p>CAMERA STREAM UNAVAILABLE</p><p className="mt-2 text-[10px] text-mist">Check that the camera is reachable and enabled in the Camera Fleet page.<br />Register the RTSP/MJPEG URL there if it is not yet configured.</p><button className="mt-4 border border-alert/50 px-3 py-2 text-[10px] text-alert" onClick={() => { setFailed(false); window.location.reload(); }}>RECONNECT</button></div>
         </div>
       )}
       <div className="pointer-events-none absolute bottom-2 left-3 font-mono text-[9px] tracking-[0.12em] text-pale/70">
         {lastUpdate ? `BACKEND · ${lastUpdate}` : "CONNECTING TO DJANGO ANALYTICS"}
       </div>
+      <button
+        onClick={cycleMirror}
+        title="Cycle mirror orientation: AUTO → MIRRORED → NORMAL → AUTO"
+        className={clsx(
+          "pointer-events-auto absolute right-2 top-2 border px-2 py-1 font-mono text-[9px] tracking-[0.2em] backdrop-blur-sm transition-colors",
+          mirrorMode === "on" && "border-signal/50 bg-signal/15 text-signal",
+          mirrorMode === "off" && "border-flare/50 bg-flare/15 text-flare",
+          mirrorMode === "auto" && "border-edge bg-ink/70 text-mist hover:text-pale",
+        )}
+      >
+        {mirrorMode === "auto" ? "MIRROR · AUTO" : mirrorMode === "on" ? "MIRRORED" : "NORMAL"}
+      </button>
     </div>
   );
 }

@@ -19,7 +19,6 @@ from typing import Any
 
 from app.config import FACE_MODEL_PATH
 from app.detection.base import BaseDetector
-from app.detection.face_embedder import extract_embedding
 
 # Typical body/face proportions for a standing person. When we only have a face
 # box we extrapolate the body below it; these are used as camera-agnostic ratios
@@ -28,6 +27,20 @@ from app.detection.face_embedder import extract_embedding
 BODY_HEIGHT_RATIO = 5.6      # total body height / face height
 BODY_WIDTH_RATIO = 2.6       # torso width / face width
 FACE_TO_TOP_RATIO = 0.18     # fraction of body height between head-top and face-top
+
+
+def _box_iou(a: list[int], b: list[int]) -> float:
+    """Intersection-over-union for duplicate face-box suppression."""
+    ax1, ay1, ax2, ay2 = a
+    bx1, by1, bx2, by2 = b
+    ix1, iy1 = max(ax1, bx1), max(ay1, by1)
+    ix2, iy2 = min(ax2, bx2), min(ay2, by2)
+    intersection = max(0, ix2 - ix1) * max(0, iy2 - iy1)
+    if not intersection:
+        return 0.0
+    area_a = max(1, ax2 - ax1) * max(1, ay2 - ay1)
+    area_b = max(1, bx2 - bx1) * max(1, by2 - by1)
+    return intersection / max(1, area_a + area_b - intersection)
 
 
 class FaceDetector(BaseDetector):
@@ -44,13 +57,23 @@ class FaceDetector(BaseDetector):
     def detect(self, image: np.ndarray, conf_threshold: float = 0.50) -> list[dict[str, Any]]:
         """Return face detections plus an inferred body box per face.
 
-        Each returned detection carries:
+Each returned detection carries:
           bbox: the face box [x1,y1,x2,y2]
           body_bbox: the inferred whole-person box (used by Person mode)
           face_photo: base64 JPEG crop (for the Analytics subject photo)
-          embedding: 64-dim identity descriptor (for registration matching)
-        """
-        faces = self._run_model(image, conf_threshold)
+          _crop: the raw BGR crop (in-process only) — SubjectService embeds
+                 it lazily (throttled per subject) for registration matching.
+    """
+        raw_faces = self._run_model(image, conf_threshold)
+        # Some face weights occasionally emit two heavily-overlapping boxes for
+        # one person. Keeping only the higher-confidence box stabilises the
+        # tracking key, so confirmation can reach the person's name instead of
+        # being repeatedly reset on a duplicate `face` track.
+        faces: list[dict[str, Any]] = []
+        for candidate in sorted(raw_faces, key=lambda item: item["confidence"], reverse=True):
+            if any(_box_iou(candidate["bbox"], kept["bbox"]) >= 0.45 for kept in faces):
+                continue
+            faces.append(candidate)
         face_detections: list[dict[str, Any]] = []
         for face in faces:
             x1, y1, x2, y2 = face["bbox"]
@@ -69,7 +92,8 @@ class FaceDetector(BaseDetector):
                     **face,
                     "class": "face",
                     "body_bbox": [int(body_left), int(body_top), int(body_right), int(body_bottom)],
-                    "embedding": extract_embedding(crop).tolist(),
+                    "embedding": None,
+                    "_crop": crop,
                     "face_photo": encode_face_photo(crop, 160),
                     "attributes": {},  # filled by SubjectService (registration match)
                 }
